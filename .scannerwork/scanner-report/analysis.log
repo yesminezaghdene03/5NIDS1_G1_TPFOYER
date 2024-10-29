@@ -70,7 +70,7 @@ Project scanner properties:
   - sonar.scanner.app=ScannerCLI
   - sonar.scanner.appVersion=6.2.1.4610
   - sonar.scanner.arch=amd64
-  - sonar.scanner.bootstrapStartTime=1730211410661
+  - sonar.scanner.bootstrapStartTime=1730224360285
   - sonar.scanner.home=C:\Users\21626\sonar-scanner-cli-6.2.1.4610-windows-x64\sonar-scanner-6.2.1.4610-windows-x64\bin\..
   - sonar.scanner.os=windows
   - sonar.scanner.wasEngineCacheHit=true

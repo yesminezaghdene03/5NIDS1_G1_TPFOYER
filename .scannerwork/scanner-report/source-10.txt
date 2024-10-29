@@ -23,7 +23,7 @@ public class Chambre {
     private TypeChambre typeC;
 
     @ManyToOne
-    @JoinColumn(name = "idBloc")  // Updated to match the primary key field in Bloc
+    @JoinColumn(name = "idBloc")
     private Bloc bloc;
 
     @OneToMany(mappedBy = "chambre")
@@ -33,6 +33,15 @@ public class Chambre {
         this.numeroChambre = numeroChambre;
         this.typeC = typeC;
         this.bloc = bloc;
+        logger.debug("Chambre créée : {}", this);
+    }
+
+    public Chambre(int idChambre, int numeroChambre, TypeChambre typeC, Bloc bloc, Set<Reservation> reservations) {
+        this.idChambre = idChambre;
+        this.numeroChambre = numeroChambre;
+        this.typeC = typeC;
+        this.bloc = bloc;
+        this.reservations = reservations;
         logger.debug("Chambre créée : {}", this);
     }
 

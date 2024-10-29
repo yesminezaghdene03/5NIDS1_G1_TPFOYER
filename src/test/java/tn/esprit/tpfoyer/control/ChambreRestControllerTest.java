@@ -14,6 +14,7 @@ import tn.esprit.tpfoyer.entity.Chambre;
 import tn.esprit.tpfoyer.entity.Bloc;
 import tn.esprit.tpfoyer.service.IChambreService;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 @WebMvcTest(ChambreRestController.class)
@@ -32,8 +33,8 @@ class ChambreRestControllerTest {
 
     @Test
     void testGetChambres() throws Exception {
-        Chambre chambre1 = new Chambre(101, Chambre.TypeChambre.SIMPLE, new Bloc());
-        Chambre chambre2 = new Chambre(102, Chambre.TypeChambre.DOUBLE, new Bloc());
+        Chambre chambre1 = new Chambre(1, 101, Chambre.TypeChambre.SIMPLE, new Bloc(), new HashSet<>());
+        Chambre chambre2 = new Chambre(2, 102, Chambre.TypeChambre.DOUBLE, new Bloc(), new HashSet<>());
         List<Chambre> chambres = Arrays.asList(chambre1, chambre2);
 
         when(chambreService.retrieveAllChambres()).thenReturn(chambres);
@@ -47,7 +48,7 @@ class ChambreRestControllerTest {
 
     @Test
     void testRetrieveChambre() throws Exception {
-        Chambre chambre = new Chambre(103, Chambre.TypeChambre.SIMPLE, new Bloc());
+        Chambre chambre = new Chambre(1, 103, Chambre.TypeChambre.SIMPLE, new Bloc(), new HashSet<>());
 
         when(chambreService.retrieveChambre(1L)).thenReturn(chambre);
 
@@ -66,7 +67,7 @@ class ChambreRestControllerTest {
 
     @Test
     void testAddChambre() throws Exception {
-        Chambre chambre = new Chambre(104, Chambre.TypeChambre.DOUBLE, new Bloc());
+        Chambre chambre = new Chambre(1, 104, Chambre.TypeChambre.DOUBLE, new Bloc(), new HashSet<>());
 
         when(chambreService.addChambre(any(Chambre.class))).thenReturn(chambre);
 
@@ -89,7 +90,7 @@ class ChambreRestControllerTest {
 
     @Test
     void testModifyChambre() throws Exception {
-        Chambre chambre = new Chambre(105, Chambre.TypeChambre.SIMPLE, new Bloc());
+        Chambre chambre = new Chambre(1, 105, Chambre.TypeChambre.SIMPLE, new Bloc(), new HashSet<>());
 
         when(chambreService.modifyChambre(any(Chambre.class))).thenReturn(chambre);
 
@@ -102,7 +103,7 @@ class ChambreRestControllerTest {
 
     @Test
     void testTrouverChSelonTC() throws Exception {
-        Chambre chambre = new Chambre(106, Chambre.TypeChambre.SIMPLE, new Bloc());
+        Chambre chambre = new Chambre(1, 106, Chambre.TypeChambre.SIMPLE, new Bloc(), new HashSet<>());
         List<Chambre> chambres = Arrays.asList(chambre);
 
         when(chambreService.recupererChambresSelonTyp(Chambre.TypeChambre.SIMPLE)).thenReturn(chambres);
@@ -115,7 +116,7 @@ class ChambreRestControllerTest {
 
     @Test
     void testTrouverChSelonEt() throws Exception {
-        Chambre chambre = new Chambre(107, Chambre.TypeChambre.DOUBLE, new Bloc());
+        Chambre chambre = new Chambre(1, 107, Chambre.TypeChambre.DOUBLE, new Bloc(), new HashSet<>());
 
         when(chambreService.trouverchambreSelonEtudiant(123456)).thenReturn(chambre);
 

@@ -2,5 +2,5 @@ projectKey=My_project_key
 serverUrl=http://192.168.50.4:9000
 serverVersion=10.7.0.96327
 dashboardUrl=http://192.168.50.4:9000/dashboard?id=My_project_key
-ceTaskId=62b33418-bd62-43c4-83ba-471d9e0a5029
-ceTaskUrl=http://192.168.50.4:9000/api/ce/task?id=62b33418-bd62-43c4-83ba-471d9e0a5029
+ceTaskId=41eb9c26-21d3-46ee-b79e-a943ddd75d80
+ceTaskUrl=http://192.168.50.4:9000/api/ce/task?id=41eb9c26-21d3-46ee-b79e-a943ddd75d80

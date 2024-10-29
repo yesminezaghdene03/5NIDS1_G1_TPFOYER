@@ -1,4 +1,4 @@
-▌ЛМ┼н2My_project_key(:R
+а╦в╦н2My_project_key(:R
 
 kubernetesD
 $dca0697b-37bc-4b37-9c53-6284f4eb9f06	Sonar way
@@ -66,4 +66,4 @@ $f8a95b15-020b-4548-a7f6-69a09c20de2f	Sonar wayts Р╥ ей2B
 text
 text┤╪ ей2B7
 javasymbolicexecution
-javasymbolicexecution╖╪ ей2j(80a6c24174db7434cee3bcc31347189b68b21857В1.0
+javasymbolicexecution╖╪ ей2j(6800a0b120b74b912c0ebb02c5208775b4cfc901В1.0
