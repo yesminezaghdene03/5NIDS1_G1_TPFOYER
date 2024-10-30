@@ -4,11 +4,11 @@ pipeline {
     tools {
         maven 'M2_HOME' // Assurez-vous que ce nom correspond à celui configuré dans Jenkins
         jdk 'JAVA_HOME' // Assurez-vous que ce nom correspond à celui configuré dans Jenkins
-        SonarQube Scanner 'SonarQube Scanner' // Assurez-vous que ce nom correspond à celui configuré dans Jenkins
     }
 
     environment {
         SONAR_HOST_URL = 'http://192.168.50.4:9000'
+        SONARQUBE_ENV = 'SonarQube Scanner' // Remplacez par le nom de l’installation de SonarQube
         SONAR_LOGIN = credentials('sonar-token') // Utilisez le jeton d'authentification configuré
     }
 
@@ -16,7 +16,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Récupérer le code source depuis le dépôt Git
-                checkout scm
+                git 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
             }
         }
         stage('Build') {
@@ -31,21 +31,13 @@ pipeline {
                 sh 'mvn test'
             }
         }
-        stage('Package') {
-            steps {
-                // Créer le package du projet
-                sh 'mvn package'
-            }
-        }
         stage('SonarQube Analysis') {
             steps {
                 // Lancer l'analyse SonarQube
-                withSonarQubeEnv('sonarQube') {
+                withSonarQubeEnv(SONARQUBE_ENV) {
                     sh '''
                         sonar-scanner \
-                        -Dsonar.projectKey=My_project_key \
-                        -Dsonar.projectName="tp-foyer 2" \
-                        -Dsonar.projectVersion=1.0 \
+                        -Dsonar.projectKey=tp-foyer \
                         -Dsonar.sources=src/main/java \
                         -Dsonar.tests=src/test/java \
                         -Dsonar.host.url=$SONAR_HOST_URL \
@@ -55,6 +47,12 @@ pipeline {
                         -Dsonar.verbose=true
                     '''
                 }
+            }
+        }
+        stage('Package') {
+            steps {
+                // Créer le package du projet
+                sh 'mvn package'
             }
         }
         stage('Deploy to Nexus') {
@@ -81,6 +79,9 @@ pipeline {
             // Actions à exécuter après chaque build, succès ou échec
             junit '**/target/surefire-reports/*.xml'
             archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true
+        }
+        success {
+            echo 'Analyse SonarQube et déploiement sur Nexus réussis!'
         }
         failure {
             // Actions à exécuter en cas d'échec du build
