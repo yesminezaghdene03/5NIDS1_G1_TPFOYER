@@ -51,7 +51,6 @@ pipeline {
                     protocol: 'http',
                     nexusUrl: 'http://192.168.50.4:8081',
                     groupId: 'tn.esprit',
-                    artifactId: 'tp-foyer',
                     version: '5.0.0',
                     repository: 'tp-foyer2',
                     credentialsId: 'nexus-credentials',
