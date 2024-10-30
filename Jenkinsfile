@@ -4,6 +4,12 @@ pipeline {
     tools {
         maven 'M2_HOME' // Assurez-vous que ce nom correspond à celui configuré dans Jenkins
         jdk 'JAVA_HOME' // Assurez-vous que ce nom correspond à celui configuré dans Jenkins
+        sonarScanner 'SonarQube Scanner' // Assurez-vous que ce nom correspond à celui configuré dans Jenkins
+    }
+
+    environment {
+        SONAR_HOST_URL = 'http://192.168.50.4:9000'
+        SONAR_LOGIN = credentials('sonar-token') // Utilisez le jeton d'authentification configuré
     }
 
     stages {
@@ -32,14 +38,22 @@ pipeline {
             }
         }
         stage('SonarQube Analysis') {
-            environment {
-                SONAR_HOST_URL = 'http://192.168.50.4:9000'
-                SONAR_LOGIN = 'sqp_a4640d84e1a5c96985c3fcfaea059b6fb44095ce'
-            }
             steps {
                 // Lancer l'analyse SonarQube
                 withSonarQubeEnv('SonarQube') {
-                    sh 'mvn sonar:sonar'
+                    sh '''
+                        sonar-scanner \
+                        -Dsonar.projectKey=My_project_key \
+                        -Dsonar.projectName="tp-foyer 2" \
+                        -Dsonar.projectVersion=1.0 \
+                        -Dsonar.sources=src/main/java \
+                        -Dsonar.tests=src/test/java \
+                        -Dsonar.host.url=$SONAR_HOST_URL \
+                        -Dsonar.login=$SONAR_LOGIN \
+                        -Dsonar.java.binaries=target/classes \
+                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+                        -Dsonar.verbose=true
+                    '''
                 }
             }
         }
