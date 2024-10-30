@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     tools {
-        maven 'Maven 3.9.9' // Assurez-vous que cette version de Maven est configurée dans Jenkins
-        jdk 'JDK 17' // Assurez-vous que cette version de JDK est configurée dans Jenkins
+        maven 'Maven 3.9.9' // Assurez-vous que ce nom correspond à celui configuré dans Jenkins
+        jdk 'JDK 17' // Assurez-vous que ce nom correspond à celui configuré dans Jenkins
     }
 
     stages {
@@ -71,7 +71,7 @@ pipeline {
         }
         failure {
             // Actions à exécuter en cas d'échec du build
-            mail to: 'votre.email@example.com',
+            mail to: 'yesminzaghden@esprit.tn',
                  subject: "Échec du build ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                  body: "Consultez les détails à ${env.BUILD_URL}"
         }
