@@ -31,7 +31,7 @@ pipeline {
         stage ('SonarQube Analysis') {
             steps {
                 script {
-                    withSonarQubeEnv('sonar-api-key') {
+                    withSonarQubeEnv(credentialsId: 'sonar-api-key') {
                         // Exécute l'analyse SonarQube en incluant le rapport JaCoCo
                         sh 'mvn clean package sonar:sonar -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml'
                     }
