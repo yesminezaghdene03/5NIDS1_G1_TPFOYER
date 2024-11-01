@@ -11,7 +11,8 @@ pipeline {
         
         stage ('UNIT Testing') {
             steps {
-                sh 'mvn test'
+                // Prépare JaCoCo et exécute les tests unitaires
+                sh 'mvn clean test jacoco:prepare-agent jacoco:report'
             }
         }
         
@@ -27,17 +28,10 @@ pipeline {
             }
         }
         
-        stage ('JaCoCo Report') {
-            steps {
-                // Génère le rapport de couverture de code JaCoCo
-                sh 'mvn jacoco:report'
-            }
-        }
-        
         stage ('SonarQube Analysis') {
             steps {
                 script {
-                    withSonarQubeEnv(credentialsId: 'sonar-api-key') {
+                    withSonarQubeEnv('sonar-api-key') {
                         // Exécute l'analyse SonarQube en incluant le rapport JaCoCo
                         sh 'mvn clean package sonar:sonar -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml'
                     }
@@ -48,11 +42,9 @@ pipeline {
         stage ('Quality Gate Status') {
             steps {
                 script {
-                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-api-key'
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
-        
-       
     }
 }
