@@ -53,26 +53,6 @@ pipeline {
             }
         }
         
-        stage ('Nexus') {
-            steps {
-                script {
-                    nexusArtifactUploader artifacts: [
-                        [
-                            artifactId: 'tp-foyer',
-                            classifier: '',
-                            file: 'target/Uterk.jar', 
-                            type: 'jar'
-                        ]
-                    ], 
-                    credentialsId: 'nexus-auth', 
-                    groupId: 'tn.esprit', 
-                    nexusUrl: '192.168.1.170:8081', 
-                    nexusVersion: 'nexus3', 
-                    protocol: 'http', 
-                    repository: 'Tpfoyer-Release', 
-                    version: '5.0.0'
-                }
-            }
-        }
+       
     }
 }
