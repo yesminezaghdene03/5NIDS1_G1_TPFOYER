@@ -12,11 +12,7 @@ pipeline {
                 sh 'mvn test'
             }
         }
-        stage ('Mockito Testing') {
-            steps {
-                sh 'mvn test -Dtest=BlocServiceImplTest'
-            }
-        }
+        
         stage ('Integration Testing') {
             steps {
                 sh 'mvn verify -DskipUnitTests'
@@ -43,9 +39,12 @@ pipeline {
                 }
             }
         }
-       /* stage ('Nexus') {
+        stage ('Nexus') {
             steps {
                 script {
+
+                    def readPomVersion = readMavenPom file: 'pom.xml'
+
                     nexusArtifactUploader artifacts: [
                         [
                             artifactId: 'tp-foyer', 
@@ -60,9 +59,9 @@ pipeline {
                     nexusVersion: 'nexus3', 
                     protocol: 'http', 
                     repository: 'Tpfoyer-Release', 
-                    version: '5.0.0'
+                    version: "${readPomVersion.version}"
                 }
             }
-        }*/
+        }
     }
 }
