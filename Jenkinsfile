@@ -18,7 +18,7 @@ pipeline {
                 sh 'mvn verify -DskipUnitTests'
             }
         }
-        stage ('Maven Building') {
+        stage ('Maven Build') {
             steps {
                 sh 'mvn clean install'
             }
@@ -55,7 +55,7 @@ pipeline {
                     ], 
                     credentialsId: 'nexus-auth', 
                     groupId: 'tn.esprit', 
-                    nexusUrl: '192.168.50.4:8081', 
+                    nexusUrl: '192.168.1.170:8081', 
                     nexusVersion: 'nexus3', 
                     protocol: 'http', 
                     repository: 'Tpfoyer-Release', 
