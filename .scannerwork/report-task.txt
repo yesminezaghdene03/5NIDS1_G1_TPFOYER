@@ -1,0 +1,6 @@
+projectKey=TP-Foyer
+serverUrl=http://192.168.33.10:9000
+serverVersion=10.7.0.96327
+dashboardUrl=http://192.168.33.10:9000/dashboard?id=TP-Foyer
+ceTaskId=659cab53-0798-4414-a7b8-8a28a12ab487
+ceTaskUrl=http://192.168.33.10:9000/api/ce/task?id=659cab53-0798-4414-a7b8-8a28a12ab487
