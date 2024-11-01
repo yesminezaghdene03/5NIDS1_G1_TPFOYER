@@ -44,6 +44,8 @@ pipeline {
                 script {
 
                     def readPomVersion = readMavenPom file: 'pom.xml'
+                    def version = readPomVersion.version
+                    def repository = version.endsWith("SNAPSHOT") ? "tpfoyer-snapshot" : "Tpfoyer-Release"
 
                     nexusArtifactUploader artifacts: [
                         [
@@ -58,7 +60,7 @@ pipeline {
                     nexusUrl: '192.168.1.170:8081', 
                     nexusVersion: 'nexus3', 
                     protocol: 'http', 
-                    repository: 'Tpfoyer-Release', 
+                    repository: repository, 
                     version: "${readPomVersion.version}"
                 }
             }
