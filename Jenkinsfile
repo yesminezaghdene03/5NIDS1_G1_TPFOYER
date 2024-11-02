@@ -2,15 +2,19 @@ pipeline {
     agent any
 
     tools {
-        git 'Default' // Assurez-vous que 'Default' correspond à l'installation Git configurée dans Jenkins
+        git 'Default'
         maven 'M2_HOME'
         jdk 'JAVA_HOME'
+        sonarQubeScanner 'SonarQube Scanner'
     }
 
     environment {
         SONAR_HOST_URL = 'http://192.168.50.4:9000'
         SONARQUBE_ENV = 'SonarQube Scanner'
-        SONAR_LOGIN = credentials('sonar-token')
+        SONAR_LOGIN = credentials('token')
+        SONAR_PROJECT_KEY ='tp-foyer-key'
+        SONAR_PROJECT_NAME = 'tp-foyer'
+        SONAR_PROJECT_VERSION = '1.0'
     }
 
     stages {
@@ -34,15 +38,17 @@ pipeline {
                 withSonarQubeEnv(SONARQUBE_ENV) {
                     sh '''
                         sonar-scanner \
-                        -Dsonar.projectKey=tp-foyer \
-                        -Dsonar.sources=src/main/java \
-                        -Dsonar.tests=src/test/java \
-                        -Dsonar.host.url=$SONAR_HOST_URL \
-                        -Dsonar.login=$SONAR_LOGIN \
-                        -Dsonar.java.binaries=target/classes \
-                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-                        -Dsonar.verbose=true
-                    '''
+                         -Dsonar.projectKey=tp-foyer-key \
+                         -Dsonar.projectName=$SONAR_PROJECT_NAME \
+                         -Dsonar.projectVersion=$SONAR_PROJECT_VERSION \
+                         -Dsonar.sources=src/main/java \
+                         -Dsonar.tests=src/test/java \
+                         -Dsonar.host.url=$SONAR_HOST_URL \
+                         -Dsonar.login=$SONAR_LOGIN \
+                         -Dsonar.java.binaries=target/classes \
+                         -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+                         -Dsonar.verbose=true
+                       '''
                 }
             }
         }
@@ -56,10 +62,10 @@ pipeline {
                 nexusArtifactUploader(
                     nexusVersion: 'nexus3',
                     protocol: 'http',
-                    nexusUrl: 'http://192.168.50.4:8081',
-                    groupId: 'tn.esprit',
-                    version: '5.0.0',
-                    repository: 'tp-foyer2',
+                    nexusUrl: NEXUS_URL,
+                    groupId: NEXUS_GROUP_ID,
+                    version: NEXUS_VERSION,
+                    repository: NEXUS_REPO,
                     credentialsId: 'nexus-credentials',
                     artifacts: [
                         [artifactId: 'tp-foyer', classifier: '', file: 'target/tp-foyer-5.0.0.jar', type: 'jar']
