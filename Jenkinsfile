@@ -77,9 +77,11 @@ pipeline {
 
     post {
         always {
-            junit '**/target/surefire-reports/*.xml'
-            archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true
-            cleanWs()
+            node {
+                junit '**/target/surefire-reports/*.xml'
+                archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true
+                cleanWs()
+            }
         }
         success {
             echo 'Analyse SonarQube et déploiement sur Nexus réussis!'
