@@ -1,5 +1,7 @@
 pipeline {
-    agent any
+    agent {
+        label 'contrôleur'
+    }
 
     tools {
         git 'Default'
@@ -71,6 +73,7 @@ pipeline {
                 junit '**/target/surefire-reports/*.xml'
                 archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true
             }
+            cleanWs()
         }
         success {
             echo 'Analyse SonarQube et déploiement sur Nexus réussis!'
