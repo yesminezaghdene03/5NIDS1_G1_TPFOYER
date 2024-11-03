@@ -28,6 +28,10 @@ pipeline {
             steps {
                 sh 'mvn test'
             }
+        stage('Package') {
+            steps {
+                 sh 'mvn package'
+            }
         }
         stage('SonarQube Analysis') {
             steps {
@@ -46,12 +50,9 @@ pipeline {
                 }
             }
         }
-        stage('Package') {
-            steps {
-                sh 'mvn package'
-            }
+
         }
-       stage('Deploy to Nexus') {
+       stage('UploadArtifact') {
            steps {
                nexusArtifactUploader(
                    nexusVersion: 'nexus3',
