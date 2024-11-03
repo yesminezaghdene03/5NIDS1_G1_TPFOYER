@@ -51,22 +51,23 @@ pipeline {
                 sh 'mvn package'
             }
         }
-        stage('Deploy to Nexus') {
-            steps {
-                nexusArtifactUploader(
-                    nexusVersion: 'nexus3',
-                    protocol: 'http',
-                    nexusUrl: 'http://192.168.50.4:8081',
-                    groupId: 'tn.esprit',
-                    version: '5.0.0',
-                    repository: 'tp-foyer2',
-                    credentialsId: 'nexus-credentials',
-                    artifacts: [
-                        [artifactId: 'tp-foyer', classifier: '', file: 'target/tp-foyer-5.0.0.jar', type: 'jar']
-                    ]
-                )
-            }
-        }
+       stage('Deploy to Nexus') {
+           steps {
+               nexusArtifactUploader(
+                   nexusVersion: 'nexus3',
+                   protocol: 'http',
+                   nexusUrl: 'http://192.168.50.4:8081',
+                   groupId: 'tn.esprit',
+                   version: '5.0.0',
+                   repository: 'tp-foyer2',
+                   credentialsId: 'nexus-credentials', // Utilisez l'ID configuré ici
+                   artifacts: [
+                       [artifactId: 'tp-foyer', classifier: '', file: 'target/tp-foyer-5.0.0.jar', type: 'jar']
+                   ]
+               )
+           }
+       }
+
     }
 
     post {
