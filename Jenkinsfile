@@ -5,12 +5,10 @@ pipeline {
         git 'Default'
         maven 'M2_HOME'
         jdk 'JAVA_HOME'
-        sonarQubeScanner 'SonarQube Scanner'
     }
 
     environment {
         SONAR_HOST_URL = 'http://192.168.50.4:9000'
-        SONARQUBE_ENV = 'SonarQube Scanner'
         SONAR_LOGIN = credentials('sqp_9233859e77bc9e349efbd11872ad11527f1e745c')
         SONAR_PROJECT_KEY = 'My_project'
         SONAR_PROJECT_NAME = 'tp-foyer 2'
@@ -35,20 +33,8 @@ pipeline {
         }
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv(SONARQUBE_ENV) {
-                    sh '''
-                        sonar-scanner \
-                         -Dsonar.projectKey=$SONAR_PROJECT_KEY \
-                         -Dsonar.projectName=$SONAR_PROJECT_NAME \
-                         -Dsonar.projectVersion=$SONAR_PROJECT_VERSION \
-                         -Dsonar.sources=src/main/java \
-                         -Dsonar.tests=src/test/java \
-                         -Dsonar.host.url=$SONAR_HOST_URL \
-                         -Dsonar.login=$SONAR_LOGIN \
-                         -Dsonar.java.binaries=target/classes \
-                         -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-                         -Dsonar.verbose=true
-                       '''
+                withSonarQubeEnv('SonarQube Scanner') {
+                    sh 'mvn sonar:sonar'
                 }
             }
         }
