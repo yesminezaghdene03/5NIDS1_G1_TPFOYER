@@ -40,9 +40,9 @@ pipeline {
                 nexusArtifactUploader(
                     nexusVersion: 'nexus3',
                     protocol: 'http',
-                    nexusUrl: '192.168.50.4:8081',
+                    nexusUrl: 'http://192.168.50.4:8081', // Ajout du protocole http://
                     groupId: 'tn.esprit',
-                    version: '5.0.0',
+                    version: '5.0.0', // Assurez-vous que cette version est correcte pour votre déploiement
                     repository: 'tp-foyer2',
                     credentialsId: 'nexus-credentials', // Utilisez l'ID configuré ici
                     artifacts: [
@@ -66,6 +66,19 @@ pipeline {
                         -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
                         -Dsonar.verbose=true
                     '''
+                }
+            }
+        }
+
+        stage('Verify Nexus Configuration') {
+            steps {
+                script {
+                    echo 'Vérifiez la configuration du dépôt Nexus pour permettre le déploiement des artefacts.'
+                    echo '1. Accédez à l\'interface d\'administration de Nexus.'
+                    echo '2. Naviguez vers "Repositories" et sélectionnez "tp-foyer2".'
+                    echo '3. Vérifiez que la politique de déploiement permet les mises à jour.'
+                    echo '4. Assurez-vous que les permissions sont correctement définies.'
+                    echo '5. Sauvegardez les modifications si nécessaire.'
                 }
             }
         }
