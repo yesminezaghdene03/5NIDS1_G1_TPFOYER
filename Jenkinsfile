@@ -40,7 +40,7 @@ pipeline {
                 nexusArtifactUploader(
                     nexusVersion: 'nexus3',
                     protocol: 'http',
-                    nexusUrl: 'http://192.168.50.4:8081',
+                    nexusUrl: '192.168.50.4:8081',
                     groupId: 'tn.esprit',
                     version: '5.0.0',
                     repository: 'tp-foyer2',
