@@ -5,7 +5,7 @@ pipeline {
         git 'Default'
         maven 'M2_HOME'
         jdk 'JAVA_HOME'
-        sonarQubeScanner 'SonarQube Scanner'
+        sonarRunner 'SonarQube Scanner'
     }
 
     environment {
