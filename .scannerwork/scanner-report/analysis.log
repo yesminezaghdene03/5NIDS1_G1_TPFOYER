@@ -8,7 +8,7 @@ Bundled analyzers:
 Global server settings:
   - sonar.azureresourcemanager.file.suffixes=.bicep
   - sonar.core.id=147B411E-AZKUvVMGqxzTeZrLyKRx
-  - sonar.core.startTime=2024-10-28T23:13:56+0000
+  - sonar.core.startTime=2024-10-31T11:43:12+0000
   - sonar.cs.file.suffixes=.cs,.razor
   - sonar.css.file.suffixes=.css,.less,.scss,.sass
   - sonar.docker.file.patterns=Dockerfile,*.dockerfile
@@ -70,7 +70,7 @@ Project scanner properties:
   - sonar.scanner.app=ScannerCLI
   - sonar.scanner.appVersion=6.2.1.4610
   - sonar.scanner.arch=amd64
-  - sonar.scanner.bootstrapStartTime=1730224360285
+  - sonar.scanner.bootstrapStartTime=1730378902623
   - sonar.scanner.home=C:\Users\21626\sonar-scanner-cli-6.2.1.4610-windows-x64\sonar-scanner-6.2.1.4610-windows-x64\bin\..
   - sonar.scanner.os=windows
   - sonar.scanner.wasEngineCacheHit=true

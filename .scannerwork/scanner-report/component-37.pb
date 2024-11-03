@@ -1,1 +1,1 @@
-% (2javaX(hr7src/test/java/tn/esprit/tpfoyer/entity/ChambreTest.java
+% (2javaXJhr7src/test/java/tn/esprit/tpfoyer/entity/ChambreTest.java
