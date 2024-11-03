@@ -28,9 +28,10 @@ pipeline {
             steps {
                 sh 'mvn test'
             }
+        }
         stage('Package') {
             steps {
-                 sh 'mvn package'
+                sh 'mvn package'
             }
         }
         stage('SonarQube Analysis') {
@@ -50,31 +51,28 @@ pipeline {
                 }
             }
         }
-
+        stage('UploadArtifact') {
+            steps {
+                nexusArtifactUploader(
+                    nexusVersion: 'nexus3',
+                    protocol: 'http',
+                    nexusUrl: 'http://192.168.50.4:8081',
+                    groupId: 'tn.esprit',
+                    version: '5.0.0',
+                    repository: 'tp-foyer2',
+                    credentialsId: 'nexus-credentials', // Utilisez l'ID configuré ici
+                    artifacts: [
+                        [artifactId: 'tp-foyer', classifier: '', file: 'target/tp-foyer-5.0.0.jar', type: 'jar']
+                    ]
+                )
+            }
         }
-       stage('UploadArtifact') {
-           steps {
-               nexusArtifactUploader(
-                   nexusVersion: 'nexus3',
-                   protocol: 'http',
-                   nexusUrl: 'http://192.168.50.4:8081',
-                   groupId: 'tn.esprit',
-                   version: '5.0.0',
-                   repository: 'tp-foyer2',
-                   credentialsId: 'nexus-credentials', // Utilisez l'ID configuré ici
-                   artifacts: [
-                       [artifactId: 'tp-foyer', classifier: '', file: 'target/tp-foyer-5.0.0.jar', type: 'jar']
-                   ]
-               )
-           }
-       }
-
     }
 
     post {
         always {
-            junit '*/target/surefire-reports/.xml'
-            archiveArtifacts artifacts: '*/target/.jar', allowEmptyArchive: true
+            junit '*/target/surefire-reports/*.xml'
+            archiveArtifacts artifacts: '*/target/*.jar', allowEmptyArchive: true
         }
         success {
             echo 'Analyse SonarQube et déploiement sur Nexus réussis!'
