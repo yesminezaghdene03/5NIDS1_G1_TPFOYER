@@ -9,14 +9,8 @@ pipeline {
 
     environment {
         SONAR_HOST_URL = 'http://192.168.50.4:9000'
-        SONAR_LOGIN = credentials('sqp_9233859e77bc9e349efbd11872ad11527f1e745c')
-        SONAR_PROJECT_KEY = 'My_project'
-        SONAR_PROJECT_NAME = 'tp-foyer 2'
-        SONAR_PROJECT_VERSION = '1.0'
-        NEXUS_URL = 'http://192.168.50.5:8081/repository/maven-releases/'
-        NEXUS_GROUP_ID = 'com.example'
-        NEXUS_VERSION = '1.0'
-        NEXUS_REPO = 'maven-releases'
+        SONARQUBE_ENV = 'SonarQube Scanner'
+        SONAR_LOGIN = credentials('sonar-token')
     }
 
     stages {
@@ -37,14 +31,14 @@ pipeline {
         }
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('SonarQube Scanner') {
+                withSonarQubeEnv(SONARQUBE_ENV) {
                     sh '''
-                        mvn sonar:sonar \
-                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                        sonar-scanner \
+                        -Dsonar.projectKey=tp-foyer \
                         -Dsonar.sources=src/main/java \
                         -Dsonar.tests=src/test/java \
-                        -Dsonar.host.url=${SONAR_HOST_URL} \
-                        -Dsonar.login=${SONAR_LOGIN} \
+                        -Dsonar.host.url=$SONAR_HOST_URL \
+                        -Dsonar.login=$SONAR_LOGIN \
                         -Dsonar.java.binaries=target/classes \
                         -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
                         -Dsonar.verbose=true
@@ -62,10 +56,10 @@ pipeline {
                 nexusArtifactUploader(
                     nexusVersion: 'nexus3',
                     protocol: 'http',
-                    nexusUrl: NEXUS_URL,
-                    groupId: NEXUS_GROUP_ID,
-                    version: NEXUS_VERSION,
-                    repository: NEXUS_REPO,
+                    nexusUrl: 'http://192.168.50.4:8081',
+                    groupId: 'tn.esprit',
+                    version: '5.0.0',
+                    repository: 'tp-foyer2',
                     credentialsId: 'nexus-credentials',
                     artifacts: [
                         [artifactId: 'tp-foyer', classifier: '', file: 'target/tp-foyer-5.0.0.jar', type: 'jar']
@@ -77,11 +71,8 @@ pipeline {
 
     post {
         always {
-            node {
-                junit '**/target/surefire-reports/*.xml'
-                archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true
-                cleanWs()
-            }
+            junit '*/target/surefire-reports/.xml'
+            archiveArtifacts artifacts: '*/target/.jar', allowEmptyArchive: true
         }
         success {
             echo 'Analyse SonarQube et déploiement sur Nexus réussis!'
