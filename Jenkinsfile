@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     tools {
-        git 'Default'
+        git 'Default' // Assurez-vous que 'Default' correspond à l'installation Git configurée dans Jenkins
         maven 'M2_HOME'
         jdk 'JAVA_HOME'
     }
@@ -38,7 +38,17 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube Scanner') {
-                    sh 'mvn sonar:sonar'
+                    sh '''
+                        mvn sonar:sonar \
+                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                        -Dsonar.sources=src/main/java \
+                        -Dsonar.tests=src/test/java \
+                        -Dsonar.host.url=${SONAR_HOST_URL} \
+                        -Dsonar.login=${SONAR_LOGIN} \
+                        -Dsonar.java.binaries=target/classes \
+                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+                        -Dsonar.verbose=true
+                    '''
                 }
             }
         }
@@ -67,10 +77,8 @@ pipeline {
 
     post {
         always {
-            node('contrôleur') { // Specify the label
-                junit '**/target/surefire-reports/*.xml'
-                archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true
-            }
+            junit '**/target/surefire-reports/*.xml'
+            archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true
             cleanWs()
         }
         success {
