@@ -1,7 +1,5 @@
 pipeline {
-    agent {
-        label 'contrôleur'
-    }
+    agent any
 
     tools {
         git 'Default'
@@ -69,7 +67,7 @@ pipeline {
 
     post {
         always {
-            node {
+            node('contrôleur') { // Specify the label
                 junit '**/target/surefire-reports/*.xml'
                 archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true
             }
