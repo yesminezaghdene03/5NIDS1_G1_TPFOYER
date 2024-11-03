@@ -11,15 +11,9 @@ pipeline {
     environment {
         SONAR_HOST_URL = 'http://192.168.50.4:9000'
         SONARQUBE_ENV = 'SonarQube Scanner'
-<<<<<<< HEAD
         SONAR_LOGIN = credentials('sqp_9233859e77bc9e349efbd11872ad11527f1e745c')
-        SONAR_PROJECT_KEY = 'My_project_key'
+        SONAR_PROJECT_KEY = 'My_project'
         SONAR_PROJECT_NAME = 'tp-foyer 2'
-=======
-        SONAR_LOGIN = credentials('token')
-        SONAR_PROJECT_KEY ='tp-foyer-key'
-        SONAR_PROJECT_NAME = 'tp-foyer'
->>>>>>> 7b403ecbc96e489686ec9b47849708dab50a550d
         SONAR_PROJECT_VERSION = '1.0'
     }
 
@@ -44,11 +38,7 @@ pipeline {
                 withSonarQubeEnv(SONARQUBE_ENV) {
                     sh '''
                         sonar-scanner \
-<<<<<<< HEAD
                          -Dsonar.projectKey=$SONAR_PROJECT_KEY \
-=======
-                         -Dsonar.projectKey=tp-foyer-key \
->>>>>>> 7b403ecbc96e489686ec9b47849708dab50a550d
                          -Dsonar.projectName=$SONAR_PROJECT_NAME \
                          -Dsonar.projectVersion=$SONAR_PROJECT_VERSION \
                          -Dsonar.sources=src/main/java \
