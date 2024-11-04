@@ -16,7 +16,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'AmineDridia8NIDS_1', 
+                git branch: 'AmineDridia_5NIDS1_G1', 
                     url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
             }
         }
