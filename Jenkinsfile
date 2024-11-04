@@ -10,7 +10,7 @@ pipeline {
     environment {
         SONAR_HOST_URL = 'http://192.168.50.4:9000'
         SONARQUBE_ENV = 'SonarQube Scanner'
-        SONAR_LOGIN = credentials('sonar-token')
+        SONAR_LOGIN = credentials('jenkins-sonar')
     }
 
     stages {
