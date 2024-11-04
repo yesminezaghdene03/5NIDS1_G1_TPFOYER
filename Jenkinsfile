@@ -69,19 +69,6 @@ pipeline {
                 }
             }
         }
-
-        stage('Verify Nexus Configuration') {
-            steps {
-                script {
-                    echo 'Vérifiez la configuration du dépôt Nexus pour permettre le déploiement des artefacts.'
-                    echo '1. Accédez à l\'interface d\'administration de Nexus.'
-                    echo '2. Naviguez vers "Repositories" et sélectionnez "tp-foyer2".'
-                    echo '3. Vérifiez que la politique de déploiement permet les mises à jour.'
-                    echo '4. Assurez-vous que les permissions sont correctement définies.'
-                    echo '5. Sauvegardez les modifications si nécessaire.'
-                }
-            }
-        }
     }
 
     post {
