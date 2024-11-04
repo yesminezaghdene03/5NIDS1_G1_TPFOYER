@@ -2,21 +2,21 @@ pipeline {
     agent any
 
     tools {
-        git 'Default' // Assurez-vous que 'Default' correspond à l'installation Git configurée dans Jenkins
-        maven 'M2_HOME' // Assurez-vous que 'M2_HOME' est le nom configuré pour Maven
-        jdk 'JAVA_HOME' // Assurez-vous que 'JAVA_HOME' est le nom configuré pour le JDK
+        git 'Default' // Assurez-vous que 'Default' est bien configuré dans Jenkins
+        maven 'M2_Home' // Nom correct pour Maven
+        jdk 'JAVA_HOME' // Assurez-vous que 'JAVA_HOME' est bien configuré dans Jenkins
     }
 
     environment {
-        SONAR_HOST_URL = 'http://192.168.50.4:9000' // URL du serveur SonarQube
-        SONARQUBE_ENV = 'SonarQube Scanner' // Nom du scanner SonarQube configuré dans Jenkins
-        SONAR_LOGIN = credentials('sonar-token') // ID des credentials pour le token SonarQube
+        SONAR_HOST_URL = 'http://192.168.50.4:9000'
+        SONARQUBE_ENV = 'SonarQube Scanner'
+        SONAR_LOGIN = credentials('sonar-token')
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'AmineDridia_5NIDS1_G1', 
+                git branch: 'AmineDridia8NIDS_1', 
                     url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
             }
         }
@@ -24,7 +24,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    def scannerHome = tool 'SonarQube Scanner' // Nom du scanner configuré dans Jenkins
+                    def scannerHome = tool 'SonarQube Scanner'
                     withSonarQubeEnv('SonarQube') {
                         sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=YourProjectKey -Dsonar.sources=." 
                     }
