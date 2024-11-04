@@ -18,7 +18,7 @@ pipeline {
         stage('Scan') {
             steps {
                 withSonarQubeEnv('sq1') {
-                    sh 'mvn sonar:sonar -Dsonar.java.binaries=target/classes' // Analyse SonarQube avec les classes compilées
+                    sh 'mvn sonar:sonar' // Analyse SonarQube avec les classes compilées
                 }
             }
         }
