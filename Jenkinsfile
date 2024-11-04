@@ -1,44 +1,12 @@
 pipeline {
     agent any
 
-    tools {
-        git 'Default' // Assurez-vous que 'Default' est bien configuré dans Jenkins
-        maven 'M2_Home' // Nom correct pour Maven
-        jdk 'JAVA_HOME' // Assurez-vous que 'JAVA_HOME' est bien configuré dans Jenkins
-    }
-
-    environment {
-        SONAR_HOST_URL = 'http://192.168.50.4:9000'
-        SONARQUBE_ENV = 'sq1'
-        SONAR_LOGIN = credentials('jenkins-sonar')
-    }
-
     stages {
-        stage('Checkout') {
+        stage('GIT') {
             steps {
-                git branch: 'AmineDridia_5NIDS1_G1', 
-                    url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
+                git branch: 'AmineDridia_5NIDS1_G1',
+                    url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER'
             }
-        }
-        
-        stage('SonarQube Analysis') {
-            steps {
-                script {
-                    def scannerHome = tool 'SonarQube Scanner'
-                    withSonarQubeEnv('sq1') {
-                        sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=YourProjectKey -Dsonar.sources=." 
-                    }
-                }
-            }
-        }
-    }
-
-    post {
-        success {
-            echo 'Pipeline succeeded!'
-        }
-        failure {
-            echo 'Pipeline failed.'
         }
     }
 }
