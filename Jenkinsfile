@@ -21,6 +21,12 @@ pipeline {
                     sh 'mvn sonar:sonar -Dsonar.java.binaries=target/classes' // Analyse SonarQube avec les classes compilées
                 }
             }
+            stage('Deploy to Nexus') {
+            steps {
+                sh 'mvn deploy -DskipTests -DaltDeploymentRepository=deploymentRepo::default::http://192.168.33.10:8081/repository/maven-releases/'
+            }
+        }
+
         }
     }
 }
