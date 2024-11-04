@@ -8,5 +8,13 @@ pipeline {
                     url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER'
             }
         }
+
+        stage('Scan') {
+            steps {
+                withSonarQubeEnv('sq1') {
+                    sh 'mvn sonar:sonar'
+                }
+            }
+        }
     }
 }
