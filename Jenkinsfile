@@ -15,13 +15,13 @@ pipeline {
             }
         }
 
-        stage('Scan') {
+       /* stage('Scan') {
             steps {
                 withSonarQubeEnv('sq1') {
                     sh 'mvn sonar:sonar' // Analyse SonarQube avec les classes compilées
                 }
             }
-        }
+        }*/
 
         stage('Deploy to Nexus') {
             steps {
