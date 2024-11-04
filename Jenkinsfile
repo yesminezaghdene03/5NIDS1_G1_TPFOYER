@@ -75,5 +75,20 @@ pipeline {
                 }
             }
         }
+        stage ('Docker Hub'){
+            steps{
+                script{
+                    withCredentials([string(credentialsId: 'git_creds', variable: 'docker_hub_cred')]) {
+                        sh 'docker login -u omranihadhemi -p ${docker_hub_cred}'
+                        sh 'docker image push omranihadhemi/$JOB_NAME:v1.$BUILD_ID '
+                        sh 'docker image push omranihadhemi/$JOB_NAME:latest '
+    
+                 }
+
+                }
+            }
+
+        }
+
     }
 }
