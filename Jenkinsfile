@@ -89,6 +89,14 @@ pipeline {
             }
 
         }
+        stage ('Docker Compose Up') {
+            steps {
+                script {
+                    // Démarrer les services avec Docker Compose
+                    sh 'docker-compose up -d'
+                }
+            }
+        }
 
     }
 }

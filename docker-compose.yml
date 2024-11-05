@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .  # Utilise le Dockerfile dans le répertoire courant
+      dockerfile: Dockerfile
+    ports:
+      - "8089:8089"  # Expose le port 8089 de l'application
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:mysql://db:3306/db?createDatabaseIfNotExist=true"
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ""  # Mot de passe MySQL vide
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      - db
+
+  db:
+    image: mysql:latest
+    ports:
+      - "3306:3306"  # Expose le port MySQL
+    environment:
+      MYSQL_ROOT_PASSWORD: ""  # Définit un mot de passe root vide pour MySQL
+      MYSQL_DATABASE: db  # Crée une base de données nommée 'db' au démarrage
+    volumes:
+      - db_data:/var/lib/mysql  # Garde les données persistantes de la base
+
+volumes:
+  db_data:  # Définit le volume pour stocker les données MySQL
