@@ -84,6 +84,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
+                    echo 'Début du déploiement...'
                     // Exécuter Docker Compose pour démarrer les services
                     sh "docker-compose up -d"
                 }
