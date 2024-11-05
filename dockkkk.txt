@@ -80,15 +80,6 @@ pipeline {
                 }
             }
         }
-
-        stage('Deploy') {
-            steps {
-                script {
-                    // Exécuter Docker Compose pour démarrer les services
-                    sh "docker-compose up -d"
-                }
-            }
-        }
     }
 
     post {
@@ -106,3 +97,4 @@ pipeline {
         }
     }
 }
+ 
