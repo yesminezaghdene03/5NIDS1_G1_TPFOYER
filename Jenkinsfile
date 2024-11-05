@@ -46,10 +46,17 @@ pipeline {
             }
         }
 
+        stage('Deploy') { // Ajout du stage pour déployer avec Docker Compose
+            steps {
+                script {
+                    // Exécuter Docker Compose pour démarrer les services
+                    sh "docker-compose up -d"
+                }
+            }
+        }
+
         stage('SonarQube Analysis') {
             steps {
-                // Commenté pour éviter l'exécution
-                /*
                 withSonarQubeEnv(SONARQUBE_ENV) {
                     sh '''
                         sonar-scanner \
@@ -62,16 +69,6 @@ pipeline {
                         -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
                         -Dsonar.verbose=true
                     '''
-                }
-                */
-            }
-        }
-
-        stage('Deploy') { // Ajout du stage pour déployer avec Docker Compose
-            steps {
-                script {
-                    // Exécuter Docker Compose pour démarrer les services
-                    sh "docker-compose up -d"
                 }
             }
         }
