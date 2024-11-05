@@ -9,12 +9,12 @@ pipeline {
             }
         }
 
-        stage('Build') {
+      /*  stage('Build') {
             steps {
                 sh 'mvn clean compile' // Étape de compilation
             }
         }
-
+*/
        /* stage('Scan') {
             steps {
                 withSonarQubeEnv('sq1') {
