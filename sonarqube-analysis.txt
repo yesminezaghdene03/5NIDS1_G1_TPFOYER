@@ -1,0 +1,49 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('SCM Checkout') {
+            steps {
+                // Cloner le dépôt et se placer sur la branche EmnaBelkhiria_NIDS1_G1
+                git branch: 'EmnaBelkhiria_NIDS1_G1', url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
+            }
+        }
+
+        stage('Compile-Package') {
+            steps {
+                script {
+                    def mvnHome = tool name: 'maven-3', type: 'maven'
+                }
+                sh "${mvnHome}/bin/mvn package"
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    def mvnHome = tool name: 'maven-3', type: 'maven'
+                }
+                withSonarQubeEnv('SonarQube Server') {
+                    sh "${mvnHome}/bin/mvn sonar:sonar"
+                }
+            }
+        }
+
+        stage('Email Notification') {
+            steps {
+                mail bcc: '',
+                     body: '''Hi,
+
+Welcome to Jenkins email alerts.
+
+Thanks,
+Hari''',
+                     cc: '',
+                     from: '',
+                     replyTo: '',
+                     subject: 'Jenkins Job Notification',
+                     to: 'Emna.Belkhiria@esprit.tn'
+            }
+        }
+    }
+}
