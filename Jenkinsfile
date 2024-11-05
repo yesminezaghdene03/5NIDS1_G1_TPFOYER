@@ -12,6 +12,7 @@ pipeline {
         SONARQUBE_ENV = 'SonarQube Scanner'
         SONAR_LOGIN = credentials('sonar-token')
         DOCKER_IMAGE_NAME = 'tp-foyer' // Nom de l'image Docker
+        DOCKER_TAG = '5.0.0' // Tag de l'image Docker
     }
 
     stages {
@@ -36,7 +37,16 @@ pipeline {
             }
         }
 
-        stage('Upload Artifact') {
+        stage('Docker Build') { // Ajout du stage pour construire l'image Docker
+            steps {
+                script {
+                    // Construire l'image Docker
+                    sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
+                }
+            }
+        }
+
+        stage('UploadArtifact') {
             steps {
                 nexusArtifactUploader(
                     nexusVersion: 'nexus3',
@@ -70,24 +80,6 @@ pipeline {
                 }
             }
         }
-
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    // Construction de l'image Docker
-                    sh 'docker build -t $DOCKER_IMAGE_NAME .'
-                }
-            }
-        }
-
-        stage('Run Docker Compose') {
-            steps {
-                script {
-                    // Exécution de Docker Compose pour démarrer les services
-                    sh 'docker-compose up -d'
-                }
-            }
-        }
     }
 
     post {
@@ -102,12 +94,6 @@ pipeline {
             mail to: 'yesminzaghden1@gmail.com',
                  subject: "Échec du build ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                  body: "Consultez les détails à ${env.BUILD_URL}"
-        }
-        cleanup {
-            script {
-                // Arrêt et suppression des conteneurs après l'exécution du pipeline
-                sh 'docker-compose down'
-            }
         }
     }
 }
