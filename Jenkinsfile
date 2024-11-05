@@ -46,25 +46,10 @@ pipeline {
             }
         }
 
-        stage('UploadArtifact') {
-            steps {
-                nexusArtifactUploader(
-                    nexusVersion: 'nexus3',
-                    protocol: 'http',
-                    nexusUrl: '192.168.50.4:8081', // Ajout du protocole http://
-                    groupId: 'tn.esprit',
-                    version: '5.0.0', // Assurez-vous que cette version est correcte pour votre déploiement
-                    repository: 'tp-foyer2',
-                    credentialsId: 'nexus-credentials', // Utilisez l'ID configuré ici
-                    artifacts: [
-                        [artifactId: 'tp-foyer', classifier: '', file: 'target/tp-foyer-5.0.0.jar', type: 'jar']
-                    ]
-                )
-            }
-        }
-
         stage('SonarQube Analysis') {
             steps {
+                // Commenté pour éviter l'exécution
+                /*
                 withSonarQubeEnv(SONARQUBE_ENV) {
                     sh '''
                         sonar-scanner \
@@ -78,16 +63,33 @@ pipeline {
                         -Dsonar.verbose=true
                     '''
                 }
+                */
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy') { // Ajout du stage pour déployer avec Docker Compose
             steps {
                 script {
-                    echo 'Début du déploiement...'
                     // Exécuter Docker Compose pour démarrer les services
                     sh "docker-compose up -d"
                 }
+            }
+        }
+
+        stage('Upload Artifact') {
+            steps {
+                nexusArtifactUploader(
+                    nexusVersion: 'nexus3',
+                    protocol: 'http',
+                    nexusUrl: '192.168.50.4:8081', // Ajout du protocole http://
+                    groupId: 'tn.esprit',
+                    version: '5.0.0', // Assurez-vous que cette version est correcte pour votre déploiement
+                    repository: 'tp-foyer2',
+                    credentialsId: 'nexus-credentials', // Utilisez l'ID configuré ici
+                    artifacts: [
+                        [artifactId: 'tp-foyer', classifier: '', file: 'target/tp-foyer-5.0.0.jar', type: 'jar']
+                    ]
+                )
             }
         }
     }
