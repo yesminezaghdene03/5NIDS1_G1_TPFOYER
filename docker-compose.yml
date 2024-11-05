@@ -1,0 +1,23 @@
+services:
+  db:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: db
+    ports:
+      - "3307:3306"  # Use port 3307 on the host instead of 3306
+
+  app:
+    build: .  # Ensure there's a Dockerfile in the context of the build
+    ports:
+      - "8089:8089"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db?createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: example
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
+      SERVER_PORT: 8089
+      SERVER_SERVLET_CONTEXT_PATH: /tpfoyer
+    depends_on:
+      - db  # Ensure the app starts after the db service
