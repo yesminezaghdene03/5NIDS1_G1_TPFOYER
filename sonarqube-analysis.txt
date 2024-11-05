@@ -22,22 +22,5 @@ pipeline {
                 }
             }
         }
-
-        stage('Email Notification') {
-            steps {
-                mail bcc: '',
-                     body: '''Hi,
-
-Welcome to Jenkins email alerts.
-
-Thanks,
-Hari''',
-                     cc: '',
-                     from: '',
-                     replyTo: '',
-                     subject: 'Jenkins Job Notification',
-                     to: 'Emna.Belkhiria@esprit.tn'
-            }
-        }
     }
 }
