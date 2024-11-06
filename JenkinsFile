@@ -1,0 +1,50 @@
+pipeline {
+    agent any
+
+    environment {
+        // Définir l'URL de Nexus et le nom du credential de Nexus
+        NEXUS_URL = "http://192.168.50.4:8081/repository/myRepo/"
+        NEXUS_CREDENTIAL_ID = "nexusCredential"  // ID des informations d'identification Nexus configurées dans Jenkins
+    }
+
+    stages {
+        stage('SCM Checkout') {
+            steps {
+                // Cloner le dépôt et se placer sur la branche EmnaBelkhiria_NIDS1_G1
+                git branch: 'EmnaBelkhiria_NIDS1_G1', url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
+            }
+        }
+
+        stage('Compile-Package') {
+            steps {
+                // Compiler et empaqueter le projet avec Maven
+                sh "mvn clean package"
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube Server') {
+                    // Lancer l'analyse SonarQube
+                    sh "mvn sonar:sonar"
+                }
+            }
+        }
+
+        stage('Deploy to Nexus') {
+            steps {
+                script {
+                    // Déployer l'artefact dans Nexus après la phase d'analyse SonarQube
+                    withCredentials([usernamePassword(credentialsId: NEXUS_CREDENTIAL_ID, usernameVariable: 'NEXUS_USERNAME', passwordVariable: 'NEXUS_PASSWORD')]) {
+                        sh """
+                            mvn deploy:deploy-file -Durl=$NEXUS_URL -DrepositoryId=myRepo \
+                            -Dfile=target/$(basename ${pom.xml} .pom).jar -DgroupId=com.example \
+                            -DartifactId=my-artifact -Dversion=1.0 -Dpackaging=jar \
+                            -Dusername=$NEXUS_USERNAME -Dpassword=$NEXUS_PASSWORD
+                        """
+                    }
+                }
+            }
+        }
+    }
+}
