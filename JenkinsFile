@@ -5,8 +5,6 @@ pipeline {
         // Définir l'URL de Nexus et le nom du credential de Nexus
         NEXUS_URL = "http://192.168.50.4:8081/repository/myRepo/"
         NEXUS_CREDENTIAL_ID = "nexusCredential"  // ID des informations d'identification Nexus configurées dans Jenkins
-        SONAR_HOST_URL = "http://192.168.50.4:9000"  // URL de SonarQube
-        SONAR_LOGIN = "squ_f5f871a79899e72ab7665517742262892c2629bc"  // Ton token SonarQube
     }
 
     stages {
@@ -26,27 +24,9 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                script {
-                    // Vérifier si le fichier sonar-project.properties existe déjà
-                    if (fileExists('sonar-project.properties')) {
-                        echo "Le fichier sonar-project.properties existe déjà."
-                    } else {
-                        echo "Le fichier sonar-project.properties est absent."
-                    }
-
-                    // Lancer l'analyse SonarQube en utilisant sonar-scanner
-                    sh '''
-                        sonar-scanner \
-                        -Dsonar.login=$SONAR_LOGIN \
-                        -Dsonar.host.url=$SONAR_HOST_URL \
-                        -Dsonar.projectKey=5NIDS_G1_TPFOYER \
-                        -Dsonar.sources=src/main/java \
-                        -Dsonar.tests=src/test/java \
-                        -Dsonar.java.binaries=target/classes \
-                        -Dsonar.junit.reportPaths=target/surefire-reports \
-                        -Dsonar.jacoco.reportPaths=target/jacoco.exec \
-                        -Dsonar.verbose=true
-                    '''
+                withSonarQubeEnv('SonarQube Server') {
+                    // Lancer l'analyse SonarQube
+                    sh "mvn sonar:sonar"
                 }
             }
         }
@@ -70,10 +50,10 @@ pipeline {
                     ],
                     credentialsId: NEXUS_CREDENTIAL_ID,  // Utilisation de la variable d'environnement NEXUS_CREDENTIAL_ID
                     groupId: 'tn.esprit',
-                    nexusUrl: NEXUS_URL,
+                    nexusUrl: NEXUS_URL,  // Utilisation de la variable d'environnement NEXUS_URL
                     nexusVersion: 'nexus3',
                     protocol: 'http',
-                    repository: repository,  // Le nom du dépôt Nexus
+                    repository: repository,  // Le nom du dépôt Nexus basé sur la version
                     version: version
                 }
             }
