@@ -108,13 +108,14 @@
         </plugins>
     </build>
 
-    <!-- Deploy to Nexus -->
+    <!-- Déploiement vers Nexus -->
     <distributionManagement>
         <repository>
-            <id>deploymentRepo</id>
-            <name>Nexus Repository</name>
-            <url>http://192.168.50.4:8081/repository/maven-releases/</url>
+            <id>myRepo</id> <!-- L'ID doit correspondre à celui défini dans votre settings.xml -->
+            <name>myRepo</name>
+            <url>http://192.168.50.4:8081/repository/myRepo/</url> <!-- URL de votre repository Nexus -->
         </repository>
     </distributionManagement>
+
 
 </project>
