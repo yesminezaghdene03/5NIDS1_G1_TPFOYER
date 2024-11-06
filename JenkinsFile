@@ -6,6 +6,8 @@ pipeline {
         NEXUS_URL = "http://192.168.50.4:8081/repository/myRepo/"
         NEXUS_CREDENTIAL_ID = "nexusCredential"  // ID des informations d'identification Nexus configurées dans Jenkins
         DOCKER_COMPOSE_VERSION = '1.29.2'  // Version de Docker Compose que vous souhaitez utiliser
+        DOCKER_IMAGE_NAME = 'emnabelkhiria-5nids1'  // Nom de l'image Docker
+        DOCKER_TAG = 'latest'  // Tag de l'image Docker
     }
 
     stages {
@@ -46,23 +48,25 @@ pipeline {
             }
         }
 
-        stage('Docker Build') { // Ajout du stage pour construire l'image Docker
-                    steps {
-                        script {
-                            // Construire l'image Docker
-                            sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
-                        }
-                    }
+        stage('Docker Build') {
+            steps {
+                script {
+                    // Construire l'image Docker
+                    sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
                 }
+            }
+        }
 
-                stage('Deploy') { // Ajout du stage pour déployer avec Docker Compose
-                    steps {
-                        script {
-                            // Exécuter Docker Compose pour démarrer les services
-                            sh "docker-compose up -d"
-                        }
-                    }
+        stage('Deploy') {
+            steps {
+                script {
+                    // Exécuter Docker Compose pour démarrer les services
+                    sh "docker-compose up -d"
+                    // Vérifier si le service est bien lancé (facultatif)
+                    sh "docker-compose ps"
                 }
+            }
+        }
 
         stage('Nexus Deployment') {
             steps {
@@ -89,6 +93,13 @@ pipeline {
                 // Nettoyer les ressources Docker
                 sh 'docker system prune -f'
             }
+        }
+    }
+    post {
+        always {
+            // Toujours nettoyer les ressources Docker, même si un échec survient
+            sh 'docker-compose down'
+            sh 'docker system prune -f'
         }
     }
 }
