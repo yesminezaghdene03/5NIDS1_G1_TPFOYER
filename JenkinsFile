@@ -28,7 +28,7 @@ pipeline {
             steps {
                 script {
                     // Copier le fichier sonar.properties dans le répertoire de travail avant l'analyse
-                    sh 'cp sonar.properties .'
+                    sh 'cp sonar-project.properties .'
 
                     // Lancer l'analyse SonarQube en utilisant sonar-scanner
                     sh '''
