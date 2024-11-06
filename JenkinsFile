@@ -27,8 +27,12 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    // Copier le fichier sonar.properties dans le répertoire de travail avant l'analyse
-                    sh 'cp sonar-project.properties .'
+                    // Vérifier si le fichier sonar-project.properties existe déjà
+                    if (fileExists('sonar-project.properties')) {
+                        echo "Le fichier sonar-project.properties existe déjà."
+                    } else {
+                        echo "Le fichier sonar-project.properties est absent."
+                    }
 
                     // Lancer l'analyse SonarQube en utilisant sonar-scanner
                     sh '''
