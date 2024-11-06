@@ -5,6 +5,7 @@ pipeline {
         // Définir l'URL de Nexus et le nom du credential de Nexus
         NEXUS_URL = "http://192.168.50.4:8081/repository/myRepo/"
         NEXUS_CREDENTIAL_ID = "nexusCredential"  // ID des informations d'identification Nexus configurées dans Jenkins
+        DOCKER_COMPOSE_VERSION = '1.29.2'  // Version de Docker Compose que vous souhaitez utiliser
     }
 
     stages {
@@ -17,7 +18,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                // Construire le projet
+                // Construire le projet avec Maven
                 sh 'mvn clean install'
             }
         }
@@ -45,13 +46,33 @@ pipeline {
             }
         }
 
+        stage('Docker Build and Run') {
+            steps {
+                script {
+                    // Construire l'image Docker
+                    sh 'docker build -t emna_belkhiria_5nids1_g1_tpfoyer .'
+                    // Lancer les services Docker avec Docker Compose
+                    sh 'docker-compose up -d'
+                }
+            }
+        }
+
+        stage('Test Docker') {
+            steps {
+                script {
+                    // Vérifier que l'application fonctionne sur le port 8089 (ajustez si nécessaire)
+                    sh 'curl --silent --fail http://192.168.50.4:8089/tpfoyer'
+                }
+            }
+        }
+
         stage('Nexus Deployment') {
             steps {
                 // Déployer l'artefact dans Nexus
                 nexusArtifactUploader(
                     nexusVersion: 'nexus3',
                     protocol: 'http',
-                    nexusUrl: '192.168.50.4:8081', // Ajout du protocole http://
+                    nexusUrl: 'http://192.168.50.4:8081', // URL complète pour Nexus
                     groupId: 'tn.esprit',
                     version: '5.0.0', // Assurez-vous que cette version est correcte pour votre déploiement
                     repository: 'myRepo',
@@ -60,6 +81,15 @@ pipeline {
                         [artifactId: 'tp-foyer', classifier: '', file: 'target/tp-foyer-5.0.0.jar', type: 'jar']
                     ]
                 )
+            }
+        }
+
+        stage('Cleanup') {
+            steps {
+                // Arrêter les services Docker après le test
+                sh 'docker-compose down'
+                // Nettoyer les ressources Docker
+                sh 'docker system prune -f'
             }
         }
     }
