@@ -15,6 +15,14 @@ pipeline {
             }
         }
 
+        stage('Clean Report Files') {
+            steps {
+                // Supprimer les anciens fichiers report-task.txt
+                bat 'del /f /q target\\sonar\\report-task.txt' // Pour Windows
+                // sh 'rm -rf target/sonar/report-task.txt'  // Décommentez cette ligne si vous utilisez Linux ou Vagrant
+            }
+        }
+
         stage('Compile-Package') {
             steps {
                 // Compiler et empaqueter le projet avec Maven
