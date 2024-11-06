@@ -46,25 +46,23 @@ pipeline {
             }
         }
 
-        stage('Docker Build and Run') {
-            steps {
-                script {
-                    // Construire l'image Docker
-                    sh 'docker build -t emna_belkhiria_5nids1_g1_tpfoyer .'
-                    // Lancer les services Docker avec Docker Compose
-                    sh 'docker-compose up -d'
+        stage('Docker Build') { // Ajout du stage pour construire l'image Docker
+                    steps {
+                        script {
+                            // Construire l'image Docker
+                            sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
+                        }
+                    }
                 }
-            }
-        }
 
-        stage('Test Docker') {
-            steps {
-                script {
-                    // Vérifier que l'application fonctionne sur le port 8089 (ajustez si nécessaire)
-                    sh 'curl --silent --fail http://192.168.50.4:8089/tpfoyer'
+                stage('Deploy') { // Ajout du stage pour déployer avec Docker Compose
+                    steps {
+                        script {
+                            // Exécuter Docker Compose pour démarrer les services
+                            sh "docker-compose up -d"
+                        }
+                    }
                 }
-            }
-        }
 
         stage('Nexus Deployment') {
             steps {
