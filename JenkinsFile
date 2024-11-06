@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         // Définir l'URL de Nexus et le nom du credential de Nexus
-        NEXUS_URL = "http://192.168.50.4:8081/repository/myRepo"
+        NEXUS_URL = "http://192.168.50.4:8081/repository/myRepo/"
         NEXUS_CREDENTIAL_ID = "nexusCredential"  // ID des informations d'identification Nexus configurées dans Jenkins
     }
 
@@ -31,30 +31,32 @@ pipeline {
             }
         }
 
-        stage('Nexus') {
+        stage('Nexus Deployment') {
             steps {
                 script {
                     // Lire la version depuis le pom.xml
                     def readPomVersion = readMavenPom file: 'pom.xml'
-                    def version = readPomVersion.version
-                    def repository = version.endsWith("SNAPSHOT") ? "tpfoyer-snapshot" : "Tpfoyer-Release"
+                    def version = readPomVersion.version  // Lire la version dans le fichier pom.xml
+
+                    // Choisir le repository en fonction de la version (SNAPSHOT ou Release)
+                    def repository = version.endsWith("SNAPSHOT") ? "tpfoyer-snapshot" : "myRepo"
 
                     // Déployer l'artefact dans Nexus après la phase d'analyse SonarQube
                     nexusArtifactUploader artifacts: [
                         [
-                            artifactId: 'tp-foyer',
-                            classifier: '',
-                            file: "target/tp-foyer-${version}.jar",
-                            type: 'jar'
+                            artifactId: 'tp-foyer',  // L'artefactId dans votre pom.xml
+                            classifier: '',  // Aucune valeur pour classifier ici
+                            file: "target/tp-foyer-${version}.jar",  // Chemin vers le fichier généré par Maven
+                            type: 'jar'  // Type d'artefact
                         ]
                     ],
                     credentialsId: NEXUS_CREDENTIAL_ID,  // Utilisation de la variable d'environnement NEXUS_CREDENTIAL_ID
-                    groupId: 'tn.esprit',
+                    groupId: 'tn.esprit',  // GroupId dans votre pom.xml
                     nexusUrl: NEXUS_URL,  // Utilisation de la variable d'environnement NEXUS_URL
-                    nexusVersion: 'nexus3',
-                    protocol: 'http',
-                    repository: repository,  // Le nom du dépôt Nexus basé sur la version
-                    version: version
+                    nexusVersion: 'nexus3',  // Version de Nexus
+                    protocol: 'http',  // Le protocole utilisé pour Nexus
+                    repository: repository,  // Choix du dépôt en fonction de la version
+                    version: version  // Version de l'artefact
                 }
             }
         }
