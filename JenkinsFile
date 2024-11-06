@@ -15,18 +15,24 @@ pipeline {
             }
         }
 
-        stage('Clean Report Files') {
+        stage('Build') {
             steps {
-                // Supprimer les anciens fichiers report-task.txt
-                bat 'del /f /q target\\sonar\\report-task.txt' // Pour Windows
-                // sh 'rm -rf target/sonar/report-task.txt'  // Décommentez cette ligne si vous utilisez Linux ou Vagrant
+                // Construire le projet
+                sh 'mvn clean install'
             }
         }
 
-        stage('Compile-Package') {
+        stage('Test') {
             steps {
-                // Compiler et empaqueter le projet avec Maven
-                sh "mvn clean package"
+                // Lancer les tests
+                sh 'mvn test'
+            }
+        }
+
+        stage('Package') {
+            steps {
+                // Packager le projet
+                sh 'mvn package'
             }
         }
 
@@ -41,31 +47,19 @@ pipeline {
 
         stage('Nexus Deployment') {
             steps {
-                script {
-                    // Lire la version depuis le pom.xml
-                    def readPomVersion = readMavenPom file: 'pom.xml'
-                    def version = readPomVersion.version  // Lire la version dans le fichier pom.xml
-
-                    // Choisir le repository en fonction de la version (SNAPSHOT ou Release)
-                    def repository = version.endsWith("SNAPSHOT") ? "tpfoyer-snapshot" : "myRepo"
-
-                    // Déployer l'artefact dans Nexus après la phase d'analyse SonarQube
-                    nexusArtifactUploader artifacts: [
-                        [
-                            artifactId: 'tp-foyer',  // L'artefactId dans votre pom.xml
-                            classifier: '',  // Aucune valeur pour classifier ici
-                            file: "target/tp-foyer-${version}.jar",  // Chemin vers le fichier généré par Maven
-                            type: 'jar'  // Type d'artefact
-                        ]
-                    ],
-                    credentialsId: NEXUS_CREDENTIAL_ID,  // Utilisation de la variable d'environnement NEXUS_CREDENTIAL_ID
-                    groupId: 'tn.esprit',  // GroupId dans votre pom.xml
-                    nexusUrl: NEXUS_URL,  // Utilisation de la variable d'environnement NEXUS_URL
-                    nexusVersion: 'nexus3',  // Version de Nexus
-                    protocol: 'http',  // Le protocole utilisé pour Nexus
-                    repository: repository,  // Choix du dépôt en fonction de la version
-                    version: version  // Version de l'artefact
-                }
+                // Déployer l'artefact dans Nexus
+                nexusArtifactUploader(
+                    nexusVersion: 'nexus3',
+                    protocol: 'http',
+                    nexusUrl: '192.168.50.4:8081', // Ajout du protocole http://
+                    groupId: 'tn.esprit',
+                    version: '5.0.0', // Assurez-vous que cette version est correcte pour votre déploiement
+                    repository: 'myRepo',
+                    credentialsId: 'nexusCredential', // Utilisez l'ID configuré ici
+                    artifacts: [
+                        [artifactId: 'tp-foyer', classifier: '', file: 'target/tp-foyer-5.0.0.jar', type: 'jar']
+                    ]
+                )
             }
         }
     }
