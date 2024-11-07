@@ -25,32 +25,26 @@ services:
     volumes:
       - db_data:/var/lib/mysql  # Garde les données persistantes de la base
 
-prometheus:
+  prometheus:
     image: prom/prometheus
-    ports:
-      - "9090:9090"  # Expose le port de Prometheus
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml  # Monte la configuration de Prometheus
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
     command:
-      - "--config.file=/etc/prometheus/prometheus.yml"  # Spécifie le fichier de configuration
-    networks:
-      - monitoring
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"  # Expose le port Prometheus
 
-grafana:
+  grafana:
     image: grafana/grafana
     ports:
-      - "3000:3000"  # Expose le port de Grafana
+      - "3000:3000"  # Expose le port Grafana
     volumes:
-      - grafana_data:/var/lib/grafana  # Garde les données persistantes de Grafana
-    depends_on:
-      - prometheus  # Attendre que Prometheus soit prêt avant de démarrer
-    networks:
-      - monitoring
+      - ./grafana-provisioning/dashboards:/var/lib/grafana/dashboards
+      - ./grafana-provisioning/datasources:/etc/grafana/provisioning/datasources
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin  # Définir un mot de passe pour Grafana
 
 volumes:
-  db_data:  # Volume pour les données MySQL
-  grafana_data:  # Volume pour les données Grafana
-
-networks:
-  monitoring:
-    driver: bridge
+  db_data:  # Définit le volume pour stocker les données MySQL
+  prometheus_data:  # Volume pour stocker les données Prometheus
+  grafana_data:  # Volume pour stocker les données Grafana
