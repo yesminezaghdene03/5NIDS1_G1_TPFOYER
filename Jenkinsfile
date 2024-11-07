@@ -100,7 +100,7 @@ pipeline {
             steps {
                 script {
                     // Arrête et supprime les conteneurs du service défini dans docker-compose.yml
-                    sh 'docker compose down'
+                    sh 'docker-compose down --remove-orphans'
                 }
             }
         }
