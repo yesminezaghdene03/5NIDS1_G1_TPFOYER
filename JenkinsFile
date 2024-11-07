@@ -8,6 +8,7 @@ pipeline {
         DOCKER_COMPOSE_VERSION = '1.29.2'  // Version de Docker Compose que vous souhaitez utiliser
         DOCKER_IMAGE_NAME = 'emnabelkhiria-5nids1'  // Nom de l'image Docker
         DOCKER_TAG = 'latest'  // Tag de l'image Docker
+        SONARQUBE_TOKEN = 'sqp_bc225e0c7bd8daa746a774a9dcc9a6e5cd548f0e'  // Nouveau token SonarQube
     }
 
     stages {
@@ -42,8 +43,8 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube Server') {
-                    // Lancer l'analyse SonarQube
-                    sh "mvn sonar:sonar"
+                    // Lancer l'analyse SonarQube avec le token d'authentification
+                    sh "mvn sonar:sonar -Dsonar.login=${SONARQUBE_TOKEN}"
                 }
             }
         }
