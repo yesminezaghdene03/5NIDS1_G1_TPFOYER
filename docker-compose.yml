@@ -34,17 +34,6 @@ services:
     ports:
       - "9090:9090"  # Expose le port Prometheus
 
-  grafana:
-    image: grafana/grafana
-    ports:
-      - "3000:3000"  # Expose le port Grafana
-    volumes:
-      - ./grafana-provisioning/dashboards:/var/lib/grafana/dashboards
-      - ./grafana-provisioning/datasources:/etc/grafana/provisioning/datasources
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin  # Définir un mot de passe pour Grafana
-
 volumes:
   db_data:  # Définit le volume pour stocker les données MySQL
   prometheus_data:  # Volume pour stocker les données Prometheus
-  grafana_data:  # Volume pour stocker les données Grafana
