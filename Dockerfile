@@ -15,6 +15,3 @@ EXPOSE 8089
 
 # Démarrer l'application
 ENTRYPOINT ["java", "-jar", "app.jar"]
-
-
-
