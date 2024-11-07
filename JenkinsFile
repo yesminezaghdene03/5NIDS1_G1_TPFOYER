@@ -48,6 +48,24 @@ pipeline {
             }
         }
 
+        stage('Nexus Deployment') {
+            steps {
+                // Déployer l'artefact dans Nexus
+                nexusArtifactUploader(
+                    nexusVersion: 'nexus3',
+                    protocol: 'http',
+                    nexusUrl: 'http://192.168.50.4:8081', // URL complète pour Nexus
+                    groupId: 'tn.esprit',
+                    version: '5.0.0', // Assurez-vous que cette version est correcte pour votre déploiement
+                    repository: 'myRepo',
+                    credentialsId: 'nexusCredential', // Utilisez l'ID configuré ici
+                    artifacts: [
+                        [artifactId: 'tp-foyer', classifier: '', file: 'target/tp-foyer-5.0.0.jar', type: 'jar']
+                    ]
+                )
+            }
+        }
+
         stage('Docker Build') {
             steps {
                 script {
@@ -68,24 +86,6 @@ pipeline {
             }
         }
 
-        stage('Nexus Deployment') {
-            steps {
-                // Déployer l'artefact dans Nexus
-                nexusArtifactUploader(
-                    nexusVersion: 'nexus3',
-                    protocol: 'http',
-                    nexusUrl: 'http://192.168.50.4:8081', // URL complète pour Nexus
-                    groupId: 'tn.esprit',
-                    version: '5.0.0', // Assurez-vous que cette version est correcte pour votre déploiement
-                    repository: 'myRepo',
-                    credentialsId: 'nexusCredential', // Utilisez l'ID configuré ici
-                    artifacts: [
-                        [artifactId: 'tp-foyer', classifier: '', file: 'target/tp-foyer-5.0.0.jar', type: 'jar']
-                    ]
-                )
-            }
-        }
-
         stage('Cleanup') {
             steps {
                 // Arrêter les services Docker après le test
@@ -95,6 +95,7 @@ pipeline {
             }
         }
     }
+
     post {
         always {
             // Toujours nettoyer les ressources Docker, même si un échec survient
