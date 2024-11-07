@@ -111,6 +111,13 @@ pipeline {
                 }
             }
         }
+        stage('Grafana'){
+            steps{
+                script{
+                    sh 'docker restart grafana'
+                }
+            }
+        }
         stage('Cleanup Old Docker Images') {
             steps {
                 script {
@@ -119,6 +126,7 @@ pipeline {
                 }
             }
         }
+
     }
 }
             
