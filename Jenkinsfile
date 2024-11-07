@@ -15,7 +15,7 @@ pipeline {
         
         stage ('Integration Testing') {
             steps {
-                sh 'mvn verify -DskipUnitTests'
+                sh 'mvn verify'
             }
         }
         stage ('Maven Build') {
@@ -23,6 +23,13 @@ pipeline {
                 sh 'mvn clean install'
             }
         }
+        stage('Code Coverage') {
+            steps {
+                jacoco()
+               
+            }
+        }
+
         stage ('SonarQube Analysis') {
             steps {
                 script {
@@ -89,14 +96,11 @@ pipeline {
             }
 
         }
-        stage ('Docker Compose Up') {
-            steps {
-                script {
-                    // Démarrer les services avec Docker Compose
-                    sh 'docker-compose up -d'
+        stage('Docker Compose Up') {
+            steps{
+                script{
+                    sh 'docker compose up -d'
                 }
             }
         }
-
-    }
-}
+            
