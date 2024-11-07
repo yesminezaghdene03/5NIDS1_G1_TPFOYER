@@ -25,15 +25,5 @@ services:
     volumes:
       - db_data:/var/lib/mysql  # Garde les données persistantes de la base
 
-  prometheus:
-    image: prom/prometheus
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-    ports:
-      - "9090:9090"  # Expose le port Prometheus
-
 volumes:
   db_data:  # Définit le volume pour stocker les données MySQL
-  prometheus_data:  # Volume pour stocker les données Prometheus
