@@ -111,10 +111,17 @@ pipeline {
                 }
             }
         }
+        stage('Prometheus'){
+            steps{
+                script{
+                    sh 'docker start prometheus'
+                }
+            }
+        }
         stage('Grafana'){
             steps{
                 script{
-                    sh 'docker restart grafana'
+                    sh 'docker start grafana'
                 }
             }
         }
