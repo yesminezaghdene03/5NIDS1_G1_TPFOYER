@@ -43,8 +43,8 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube Server') {
-                    // Lancer l'analyse SonarQube avec le token d'authentification
-                    sh "mvn sonar:sonar -Dsonar.login=${SONARQUBE_TOKEN}"
+                    // Lancer l'analyse SonarQube
+                    sh "mvn sonar:sonar"
                 }
             }
         }
