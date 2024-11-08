@@ -1,0 +1,45 @@
+pipeline {
+    agent any
+
+    tools {
+        git 'Default' // Assurez-vous que 'Default' correspond à l'installation Git configurée dans Jenkins
+        maven 'M2_HOME'
+        jdk 'JAVA_HOME'
+    }
+
+    environment {
+        DOCKER_IMAGE_NAME = 'tp-foyer' // Nom de l'image Docker
+        DOCKER_TAG = '5.0.0' // Tag de l'image Docker
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'YesminZaghden_NIDS1_G1', url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
+            }
+        }
+
+        stage('Install Pre-Commit') {
+            steps {
+                // Installer pre-commit (si nécessaire)
+                sh 'pip install pre-commit'
+            }
+        }
+
+        stage('Run Pre-Commit Hooks') {
+            steps {
+                // Exécuter les hooks de pré-commit
+                sh 'pre-commit run --all-files'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Les hooks de pré-commit se sont exécutés avec succès.'
+        }
+        failure {
+            echo 'Des erreurs sont survenues lors de l\'exécution des hooks de pré-commit.'
+        }
+    }
+}
