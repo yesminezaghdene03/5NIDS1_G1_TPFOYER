@@ -54,7 +54,7 @@ pipeline {
                 }
             }
         }
-        stage ('Nexus') {
+       /* stage ('Nexus') {
             steps {
                 script {
 
@@ -154,10 +154,11 @@ pipeline {
                         Build URL: ${env.BUILD_URL}
                     """
             }
-        }
+        }*/
 
 
 
     }
+}
 
             
