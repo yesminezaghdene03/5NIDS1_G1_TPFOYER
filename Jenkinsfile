@@ -37,6 +37,23 @@ pipeline {
             }
         }
 
+        stage('Upload Artifact') { // Stage pour uploader l'artifact sur Nexus
+            steps {
+                nexusArtifactUploader(
+                    nexusVersion: 'nexus3',
+                    protocol: 'http',
+                    nexusUrl: '192.168.50.4:8081', // Ajout du protocole http://
+                    groupId: 'tn.esprit',
+                    version: '5.0.0', // Assurez-vous que cette version est correcte pour votre déploiement
+                    repository: 'tp-foyer2',
+                    credentialsId: 'nexus-credentials', // Utilisez l'ID configuré ici
+                    artifacts: [
+                        [artifactId: 'tp-foyer', classifier: '', file: 'target/tp-foyer-5.0.0.jar', type: 'jar']
+                    ]
+                )
+            }
+        }
+
         stage('Docker Build') { // Stage pour construire l'image Docker
             steps {
                 script {
