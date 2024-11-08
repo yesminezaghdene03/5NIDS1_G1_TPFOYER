@@ -11,12 +11,6 @@ import tn.esprit.tpfoyer.repository.ChambreRepository;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Implémentation du service pour gérer les opérations sur les chambres.
- * <p>
- * Cette classe fournit des méthodes pour récupérer, ajouter, modifier et supprimer des chambres.
- * </p>
- */
 @Service
 @AllArgsConstructor
 @Slf4j
