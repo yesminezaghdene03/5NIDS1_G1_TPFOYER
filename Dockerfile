@@ -10,6 +10,7 @@ COPY ./target/tp-foyer-5.0.0.jar app.jar
 RUN apt-get update && apt-get install -y fail2ban
 
 # Créer les répertoires nécessaires pour les fichiers de configuration Fail2Ban
+RUN mkdir -p /etc/fail2ban/
 RUN mkdir -p /etc/fail2ban/filter.d
 
 # Ajouter les fichiers de configuration Fail2Ban à partir de ton projet
