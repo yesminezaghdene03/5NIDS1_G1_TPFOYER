@@ -13,6 +13,7 @@ pipeline {
     stages {
         stage('SCM Checkout') {
             steps {
+                // Cloner le dépôt et se placer sur la branche EmnaBelkhiria_NIDS1_G1
                 git branch: 'EmnaBelkhiria_NIDS1_G1', url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
             }
         }
@@ -68,26 +69,8 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    // Exécuter Docker Compose pour démarrer les services
                     sh "docker-compose up -d"
-                    // Vérifier si le service est bien lancé (facultatif)
                     sh "docker-compose ps"
-                }
-            }
-        }
-
-        stage('Fail2Ban Setup and Docker Compose Deployment') {
-            steps {
-                script {
-                    // Obtenir l'ID du conteneur pour l'application
-                    def containerId = sh(script: "docker ps -q -f name=application_spring", returnStdout: true).trim()
-
-                    // Copier les fichiers de configuration de Fail2Ban
-                    sh "docker cp fail2ban/jail.local ${containerId}:/etc/fail2ban/jail.local"
-                    sh "docker cp fail2ban/jenkins.conf ${containerId}:/etc/fail2ban/filter.d/jenkins.conf"
-
-                    // Lancer Fail2Ban dans le conteneur
-                    sh "docker exec ${containerId} service fail2ban start"
                 }
             }
         }
@@ -123,7 +106,6 @@ pipeline {
 
     post {
         always {
-            // Nettoyage final
             sh 'docker-compose down'
             sh 'docker system prune -f'
         }

@@ -1,7 +1,0 @@
-[jenkins]
-enabled  = true
-port     = http,https
-filter   = jenkins
-logpath  = /var/log/jenkins/jenkins.log
-maxretry = 5
-bantime  = 3600
