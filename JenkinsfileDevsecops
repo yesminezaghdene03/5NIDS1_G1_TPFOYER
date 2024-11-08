@@ -1,0 +1,107 @@
+pipeline {
+    agent any
+
+    environment {
+        // Définir l'URL de Nexus et le nom du credential de Nexus
+        NEXUS_URL = "http://192.168.50.4:8081/repository/myRepo/"
+        NEXUS_CREDENTIAL_ID = "nexusCredential"  // ID des informations d'identification Nexus configurées dans Jenkins
+        DOCKER_COMPOSE_VERSION = '1.29.2'  // Version de Docker Compose que vous souhaitez utiliser
+        DOCKER_IMAGE_NAME = 'emnabelkhiria-5nids1'  // Nom de l'image Docker
+        DOCKER_TAG = 'latest'  // Tag de l'image Docker
+        SONARQUBE_TOKEN = 'sqp_bc225e0c7bd8daa746a774a9dcc9a6e5cd548f0e'  // Nouveau token SonarQube
+    }
+
+    stages {
+        stage('SCM Checkout') {
+            steps {
+                // Cloner le dépôt et se placer sur la branche EmnaBelkhiria_NIDS1_G1
+                git branch: 'EmnaBelkhiria_NIDS1_G1', url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                // Construire le projet avec Maven
+                sh 'mvn clean install'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                // Lancer les tests
+                sh 'mvn test'
+            }
+        }
+
+        stage('Package') {
+            steps {
+                // Packager le projet
+                sh 'mvn package'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube Server') {
+                    // Lancer l'analyse SonarQube
+                    sh "mvn sonar:sonar"
+                }
+            }
+        }
+
+        stage('Nexus Deployment') {
+            steps {
+                // Déployer l'artefact dans Nexus
+                nexusArtifactUploader(
+                    nexusVersion: 'nexus3',
+                    protocol: 'http',
+                    nexusUrl: 'http://192.168.50.4:8081', // URL complète pour Nexus
+                    groupId: 'tn.esprit',
+                    version: '5.0.0', // Assurez-vous que cette version est correcte pour votre déploiement
+                    repository: 'myRepo',
+                    credentialsId: 'nexusCredential', // Utilisez l'ID configuré ici
+                    artifacts: [
+                        [artifactId: 'tp-foyer', classifier: '', file: 'target/tp-foyer-5.0.0.jar', type: 'jar']
+                    ]
+                )
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                script {
+                    // Construire l'image Docker
+                    sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    // Exécuter Docker Compose pour démarrer les services
+                    sh "docker-compose up -d"
+                    // Vérifier si le service est bien lancé (facultatif)
+                    sh "docker-compose ps"
+                }
+            }
+        }
+
+        stage('Cleanup') {
+            steps {
+                // Arrêter les services Docker après le test
+                sh 'docker-compose down'
+                // Nettoyer les ressources Docker
+                sh 'docker system prune -f'
+            }
+        }
+    }
+
+    post {
+        always {
+            // Toujours nettoyer les ressources Docker, même si un échec survient
+            sh 'docker-compose down'
+            sh 'docker system prune -f'
+        }
+    }
+}
