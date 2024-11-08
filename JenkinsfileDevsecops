@@ -89,6 +89,11 @@ pipeline {
                 archiveArtifacts artifacts: 'docker-bench-report.txt', allowEmptyArchive: true
             }
         }
+        stage('View Report'){
+            steps{
+                sh "cat docker-bench-report.txt"
+            }
+        }
 
         stage('Cleanup') {
             steps {
