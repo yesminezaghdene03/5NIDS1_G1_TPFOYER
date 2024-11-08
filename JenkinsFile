@@ -55,10 +55,10 @@ pipeline {
                 nexusArtifactUploader(
                     nexusVersion: 'nexus3',
                     protocol: 'http',
-                    nexusUrl: 'http://192.168.50.4:8081', // URL complète pour Nexus
+                    nexusUrl: 'http://192.168.50.4:8081/repository/myRepo/', // URL complète pour Nexus
                     groupId: 'tn.esprit',
                     version: '5.0.0', // Assurez-vous que cette version est correcte pour votre déploiement
-                    repository: 'myRepo',
+                    repository: 'deploymentRepo',
                     credentialsId: 'nexusCredential', // Utilisez l'ID configuré ici
                     artifacts: [
                         [artifactId: 'tp-foyer', classifier: '', file: 'target/tp-foyer-5.0.0.jar', type: 'jar']
