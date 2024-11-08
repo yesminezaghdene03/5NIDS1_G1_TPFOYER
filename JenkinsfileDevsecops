@@ -19,6 +19,12 @@ pipeline {
             }
         }
 
+        stage('Pre-commit Check') {
+            steps {
+                sh 'pre-commit run --all-files'
+            }
+        }
+
         stage('Build') {
             steps {
                 // Construire le projet avec Maven
@@ -80,10 +86,11 @@ pipeline {
                 }
             }
         }
+
         stage('Docker Push') {
             steps {
                 script {
-                    // Construire l'image Docker
+                    // Pousser l'image Docker vers le registre
                     sh "docker push ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
                 }
             }
