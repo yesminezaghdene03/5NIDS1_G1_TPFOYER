@@ -13,7 +13,6 @@ pipeline {
     stages {
         stage('SCM Checkout') {
             steps {
-                // Cloner le dépôt et se placer sur la branche EmnaBelkhiria_NIDS1_G1
                 git branch: 'EmnaBelkhiria_NIDS1_G1', url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
             }
         }
@@ -124,7 +123,7 @@ pipeline {
 
     post {
         always {
-            // Nettoyage final, pas besoin de répéter
+            // Nettoyage final
             sh 'docker-compose down'
             sh 'docker system prune -f'
         }
