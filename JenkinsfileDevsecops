@@ -6,7 +6,7 @@ pipeline {
         NEXUS_URL = "http://192.168.50.4:8081/repository/myRepo/"
         NEXUS_CREDENTIAL_ID = "nexusCredential"  // ID des informations d'identification Nexus configurées dans Jenkins
         DOCKER_COMPOSE_VERSION = '1.29.2'  // Version de Docker Compose que vous souhaitez utiliser
-        DOCKER_IMAGE_NAME = 'emnabelkhiria-5nids1'  // Nom de l'image Docker
+        DOCKER_IMAGE_NAME = 'emna0203/emnabelkhiria-5nids1'  // Nom de l'image Docker
         DOCKER_TAG = 'latest'  // Tag de l'image Docker
         SONARQUBE_TOKEN = 'sqp_bc225e0c7bd8daa746a774a9dcc9a6e5cd548f0e'  // Nouveau token SonarQube
     }
@@ -44,26 +44,31 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube Server') {
                     // Lancer l'analyse SonarQube
-                    sh "mvn sonar:sonar"
+                    sh "mvn sonar:sonar -Dsonar.projectKey=5NIDS1_G1_TPFOYER -Dsonar.projectName='5NIDS1_G1_TPFOYER'"
                 }
             }
         }
 
-        stage('Nexus Deployment') {
+        /*stage('Nexus Deployment') {
             steps {
                 // Déployer l'artefact dans Nexus
                 nexusArtifactUploader(
                     nexusVersion: 'nexus3',
                     protocol: 'http',
-                    nexusUrl: 'http://192.168.50.4:8081', // URL complète pour Nexus
+                    nexusUrl: 'http://192.168.50.4:8081/repository/myRepo/', // URL complète pour Nexus
                     groupId: 'tn.esprit',
                     version: '5.0.0', // Assurez-vous que cette version est correcte pour votre déploiement
-                    repository: 'myRepo',
+                    repository: 'deploymentRepo',
                     credentialsId: 'nexusCredential', // Utilisez l'ID configuré ici
                     artifacts: [
                         [artifactId: 'tp-foyer', classifier: '', file: 'target/tp-foyer-5.0.0.jar', type: 'jar']
                     ]
                 )
+            }
+        }*/
+        stage('Deployment Nexus'){
+            steps {
+                sh "mvn deploy -Dmaven.test.skip=true -DaltDeploymentRepository=deploymentRepo::default::http://192.168.50.4:8081/repository/myRepo/"
             }
         }
 
@@ -72,6 +77,14 @@ pipeline {
                 script {
                     // Construire l'image Docker
                     sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
+                }
+            }
+        }
+        stage('Docker Push') {
+            steps {
+                script {
+                    // Construire l'image Docker
+                    sh "docker push ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
                 }
             }
         }
