@@ -49,7 +49,7 @@ pipeline {
             }
         }
 
-        stage('Nexus Deployment') {
+        s/*tage('Nexus Deployment') {
             steps {
                 // Déployer l'artefact dans Nexus
                 nexusArtifactUploader(
@@ -65,12 +65,12 @@ pipeline {
                     ]
                 )
             }
-        }
-        /*stage('Deployment Nexus')
+        }*/
+        stage('Deployment Nexus'){
             steps {
                 sh "mvn deploy -Dmaven.test.skip=true -DaltDeploymentRepository=deploymentRepo::default::http://192.168.50.4:8081/repository/myRepo/"
             }
-        }*/
+        }
             
         stage('Docker Build') {
             steps {
