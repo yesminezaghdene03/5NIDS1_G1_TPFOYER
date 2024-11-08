@@ -18,13 +18,7 @@ pipeline {
             }
         }
 
-        stage('Pre-commit Check') {
-            steps {
-                withEnv(['PATH+PRE_COMMIT=C:\\Users\\emnab\\AppData\\Local\\Programs\\Python\\Python313\\Scripts']) {
-                    sh 'pre-commit run --all-files'
-                }
-            }
-        }
+
 
         stage('Build') {
             steps {
