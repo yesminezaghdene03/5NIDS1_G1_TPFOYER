@@ -10,6 +10,7 @@ pipeline {
     environment {
         DOCKER_IMAGE_NAME = 'tp-foyer' // Nom de l'image Docker
         DOCKER_TAG = '5.0.0' // Tag de l'image Docker
+        PATH = "$PATH:/home/vagrant/.local/bin" // Ajouter le chemin absolu de pre-commit au PATH
     }
 
     stages {
@@ -21,15 +22,15 @@ pipeline {
 
         stage('Install Pre-Commit') {
             steps {
-                // Installer pre-commit (si nécessaire)
-                sh 'pip install pre-commit'
+                // Installer pre-commit pour l'utilisateur Jenkins
+                sh 'pip install --user pre-commit'
             }
         }
 
         stage('Run Pre-Commit Hooks') {
             steps {
-                // Exécuter les hooks de pré-commit
-                sh 'pre-commit run --all-files'
+                // Exécuter les hooks de pré-commit en utilisant le chemin absolu
+                sh '/home/vagrant/.local/bin/pre-commit run --all-files'
             }
         }
     }
