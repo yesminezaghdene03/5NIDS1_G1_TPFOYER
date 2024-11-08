@@ -13,6 +13,7 @@ services:
 
   app:
     image: emnabelkhiria-5nids1:latest  # Utiliser l'image construite
+    container_name: application_spring
     ports:
       - "8089:8089"  # Map du port 8089 de la machine hôte vers le port 8089 du conteneur
     environment:

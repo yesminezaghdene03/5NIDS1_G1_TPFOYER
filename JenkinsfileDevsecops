@@ -69,8 +69,26 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
+                    // Exécuter Docker Compose pour démarrer les services
                     sh "docker-compose up -d"
+                    // Vérifier si le service est bien lancé (facultatif)
                     sh "docker-compose ps"
+                }
+            }
+        }
+
+        stage('Fail2Ban Setup and Docker Compose Deployment') {
+            steps {
+                script {
+                    // Obtenir l'ID du conteneur pour l'application
+                    def containerId = sh(script: "docker ps -q -f name=application_spring", returnStdout: true).trim()
+
+                    // Copier les fichiers de configuration de Fail2Ban
+                    sh "docker cp fail2ban/jail.local ${containerId}:/etc/fail2ban/jail.local"
+                    sh "docker cp fail2ban/jenkins.conf ${containerId}:/etc/fail2ban/filter.d/jenkins.conf"
+
+                    // Lancer Fail2Ban dans le conteneur
+                    sh "docker exec ${containerId} service fail2ban start"
                 }
             }
         }
@@ -89,8 +107,9 @@ pipeline {
                 archiveArtifacts artifacts: 'docker-bench-report.txt', allowEmptyArchive: true
             }
         }
-        stage('View Report'){
-            steps{
+
+        stage('View Report') {
+            steps {
                 sh "cat docker-bench-report.txt"
             }
         }
@@ -105,6 +124,7 @@ pipeline {
 
     post {
         always {
+            // Nettoyage final, pas besoin de répéter
             sh 'docker-compose down'
             sh 'docker system prune -f'
         }
