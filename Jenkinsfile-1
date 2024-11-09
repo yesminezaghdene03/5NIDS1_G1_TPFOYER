@@ -52,11 +52,11 @@ pipeline {
             steps {
                 echo 'Running SonarQube Analysis'
                 // Run SonarQube analysis with specified project key, host URL, and token
-                sh """
-                mvn sonar:sonar \
-                  -Dsonar.projectKey=$SONAR_PROJECT_KEY \
-                  -Dsonar.host.url=$SONAR_HOST_URL \
-                  -Dsonar.login=squ_0d25bf71b44960bbc80010eb27d3ddbdaf390647
+
+                   withSonarQubeEnv(installationName: 'sq1') {
+                            sh """
+                            ./mvnw clean org.sonarsource.scanner.maven:sonar-maven-plugin:3.9.0.2155:sonar' \
+                            -Dsonar.projectKey=$SONAR_PROJECT_KEY
                 """
             }
         }
