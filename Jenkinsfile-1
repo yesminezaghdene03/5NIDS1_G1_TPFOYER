@@ -54,8 +54,8 @@ pipeline {
                 // Run SonarQube analysis with specified project key, host URL, and token
 
                       withSonarQubeEnv(installationName: 'sq1') {
-                             sh 'chmod +x mvnw'
-                             sh './mvnw clean org.sonarsource.scanner.maven:sonar-maven-plugin:3.9.0.2155:sonar'
+
+                             sh 'mvn sonar:sonar'
                            }
             }
         }
