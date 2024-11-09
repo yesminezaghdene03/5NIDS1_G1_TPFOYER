@@ -53,12 +53,9 @@ pipeline {
                 echo 'Running SonarQube Analysis'
                 // Run SonarQube analysis with specified project key, host URL, and token
 
-                   withSonarQubeEnv(installationName: 'sq1') {
-                            sh """
-                             mvn clean verify sonar:sonar' \
-                                 -Dsonar.projectKey=$SONAR_PROJECT_KEY
-                             """
-                   }
+                      withSonarQubeEnv(installationName: 'sq1') {
+                             sh './mvnw clean org.sonarsource.scanner.maven:sonar-maven-plugin:3.9.0.2155:sonar'
+                           }
             }
         }
 stage('Deploy to Nexus') {
