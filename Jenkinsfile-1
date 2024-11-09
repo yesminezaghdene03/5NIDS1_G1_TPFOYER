@@ -95,9 +95,12 @@ stage('Deploy to Nexus') {
         stage('Dockerhub') {
             steps {
                 echo 'Push Image to dockerhub : ';
-                sh 'docker login -u wassimbhs -p Sonar123456$';
-                sh 'docker push wassimbhs/tp-foyer:1.0.0';
-            }
+              withCredentials([usernamePassword(credentialsId: 'dockerhubCredential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                         sh """
+                             echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+                             docker push "$DOCKER_USERNAME/tp-foyer:1.0.0"
+                         """
+                     }
         }
 
         stage('Docker-Compose') {
