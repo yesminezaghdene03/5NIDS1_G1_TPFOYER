@@ -5,6 +5,11 @@ pipeline {
         NEXUS_URL = 'http://192.168.33.10:8081' // Replace with your Nexus URL
         NEXUS_REPO = 'maven-releases' // Replace with your Nexus repository name
     }
+     options {
+            // Automatically clean the workspace before starting the pipeline
+            skipDefaultCheckout() // Prevents Jenkins from automatically checking out the code
+        }
+
 
     stages {
     stage('Clean Workspace') {
