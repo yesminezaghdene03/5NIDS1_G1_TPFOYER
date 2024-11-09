@@ -10,7 +10,9 @@ pipeline {
     environment {
         DOCKER_IMAGE_NAME = 'tp-foyer'
         DOCKER_TAG = '5.0.0'
+        VAULT_ADDR = 'http://127.0.0.1:8200' // Adresse de Vault
         PATH = "$PATH:/home/vagrant/.local/bin:/usr/local/bin" // Ajout du chemin de Trivy
+        VAULT_TOKEN = credentials('JENKINS_VAULT_TOKEN') // Utilisation d'un secret Jenkins pour le token Vault
     }
 
     stages {
@@ -38,7 +40,17 @@ pipeline {
             }
         }
 
-        stage('Docker Build') { // Construction de l'image Docker
+        stage('Vault Initialization') {
+            steps {
+                script {
+                    // Utilisation du token Vault à partir des variables d'environnement Jenkins
+                    sh "export VAULT_TOKEN=${env.VAULT_TOKEN}"
+                    sh 'vault status' // Vérifie la connexion au Vault
+                }
+            }
+        }
+
+        stage('Docker Build') {
             steps {
                 script {
                     sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
@@ -46,19 +58,35 @@ pipeline {
             }
         }
 
-        stage('Security Scan') { // Scan de sécurité
+        stage('Security Scan') {
             steps {
                 sh 'trivy image ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} || echo "Security scan failed. Review required."'
             }
         }
 
+        stage('Dependency Check') {
+            steps {
+                script {
+                    sh 'mvn org.owasp:dependency-check-maven:8.1.2:check -Dformat=HTML -DoutputDirectory=target'
+                }
+            }
+        }
+
         stage('Acceptance Tests') {
             steps {
-                // Lancer tous les tests unitaires existants
                 sh 'mvn test || echo "Acceptance tests failed. Review required."'
             }
         }
 
+        stage('Use Vault Secrets') {
+            steps {
+                script {
+                    // Récupérer un secret de Vault
+                    def secret = sh(script: 'vault kv get -field=value secret/my-secret', returnStdout: true).trim()
+                    echo "Vault secret: ${secret}"  // Utiliser le secret récupéré
+                }
+            }
+        }
 
     }
 
