@@ -5,10 +5,10 @@ FROM openjdk:17-jdk-slim
 WORKDIR /app
 
 # Installer ZAP (OWASP Zed Attack Proxy)
-RUN apt-get update && apt-get install -y wget && \
-    wget https://github.com/zaproxy/zaproxy/releases/download/v2.14.2/ZAP_2.14.2_linux.tar.gz && \
-    tar -xvzf ZAP_2.14.2_linux.tar.gz && \
-    mv ZAP_2.14.2 /zap
+RUN apt-get update && apt-get install -y wget unzip && \
+    wget https://github.com/zaproxy/zaproxy/releases/download/w2024-11-04/ZAP_WEEKLY_D-2024-11-04.zip && \
+    unzip ZAP_WEEKLY_D-2024-11-04.zip -d /zap
+
 
 # Copier l'artefact généré par Maven (le fichier JAR) dans le conteneur
 COPY ./target/tp-foyer-5.0.0.jar app.jar
