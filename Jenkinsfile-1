@@ -1,0 +1,123 @@
+pipeline {
+    agent any
+
+    environment {
+        SONAR_PROJECT_KEY = 'TP-Foyer2'
+        SONAR_HOST_URL = 'http://192.168.33.10:9000'
+        NEXUS_URL = 'http://192.168.33.10:8081' // Replace with your Nexus URL
+        NEXUS_REPO = 'maven-releases' // Replace with your Nexus repository name
+        NEXUS_USERNAME = 'admin' // Replace with your Nexus username
+        NEXUS_PASSWORD = 'Sonar123456$' // Replace with your Nexus password
+    }
+
+    stages {
+        stage('Hello') {
+            steps {
+                echo 'Hello World'
+            }
+        }
+
+        stage('Clone Repository') {
+            steps {
+                echo 'Pulling Repository'
+                // Clone the GitHub repository (le projet est public, donc pas besoin de credentials)
+                git url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git', branch: 'WassimBELHAJSALEM-5NIDS1-G1'
+            }
+        }
+
+        stage('Clean') {
+            steps {
+                // Clean the project using Maven
+                sh 'mvn clean'
+            }
+        }
+
+        stage('Compile with Maven') {
+            steps {
+                // Compile the project using Maven
+                sh 'mvn compile'
+            }
+        }
+
+        stage('Package without Tests') {
+            steps {
+                // Create the JAR package without running tests
+                sh 'mvn package -DskipTests'
+            }
+        }
+
+
+
+        stage('SonarQube Analysis') {
+            steps {
+                echo 'Running SonarQube Analysis'
+                // Run SonarQube analysis with specified project key, host URL, and token
+                sh """
+                mvn sonar:sonar \
+                  -Dsonar.projectKey=$SONAR_PROJECT_KEY \
+                  -Dsonar.host.url=$SONAR_HOST_URL \
+                  -Dsonar.login=squ_0d25bf71b44960bbc80010eb27d3ddbdaf390647
+                """
+            }
+        }
+stage('Deploy to Nexus') {
+    steps {
+        echo 'Deploying to Nexus'
+
+        // Check if the JAR file exists
+        script {
+            if (!fileExists('target/tp-foyer-5.0.0.jar')) {
+                error("The JAR file does not exist: target/tp-foyer-5.0.0.jar.original")
+            }
+        }
+
+        // Deploy the file to Nexus
+        sh """
+        mvn -s /usr/share/maven/conf/settings.xml deploy:deploy-file \
+          -DgroupId=com.example \
+          -DartifactId=tp-foyer \
+          -Dversion=5.0.0 \
+          -Dpackaging=jar \
+          -Dfile=target/tp-foyer-5.0.0.jar \
+          -DrepositoryId=deploymentRepo \
+          -Durl=$NEXUS_URL/repository/$NEXUS_REPO/ \
+          -Dusername=$NEXUS_USERNAME \
+          -Dpassword=$NEXUS_PASSWORD
+        """
+    }
+}
+    stage('Image') {
+            steps {
+                echo 'Création Image : ';
+                sh 'docker build -t wassimbhs/tp-foyer:1.0.0 .';
+            }
+        }
+
+        stage('Dockerhub') {
+            steps {
+                echo 'Push Image to dockerhub : ';
+                sh 'docker login -u wassimbhs -p Sonar123456$';
+                sh 'docker push wassimbhs/tp-foyer:1.0.0';
+            }
+        }
+
+        stage('Docker-Compose') {
+            steps {
+                echo 'Start Backend + DB : ';
+                sh 'docker compose up -d';
+            }
+        }
+
+    }
+
+
+
+    post {
+        failure {
+            // Send email if the build fails
+            mail to: 'wassimbhs303@gmail.com',
+                 subject: "Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                 body: "The build job '${env.JOB_NAME}' failed at build #${env.BUILD_NUMBER}. Please check the logs for details."
+        }
+    }
+}
