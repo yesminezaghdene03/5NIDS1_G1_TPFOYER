@@ -7,6 +7,11 @@ pipeline {
     }
 
     stages {
+    stage('Clean Workspace') {
+        steps {
+            deleteDir()  // This will delete all workspace files and directories
+        }
+    }
         // Pre-Commit Phase
         stage('Pre-Commit: Code Linting') {
             steps {
