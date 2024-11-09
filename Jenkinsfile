@@ -46,8 +46,7 @@ pipeline {
                          <p>Le build <b>#${env.BUILD_NUMBER}</b> du job <b>${env.JOB_NAME}</b> est terminé avec le statut <b>${currentBuild.result ?: 'SUCCESS'}</b>.</p>
                          <p>Cliquez <a href="${env.BUILD_URL}">ici</a> pour voir les détails du build.</p>""",
                 to: 'aminedridia9@gmail.com',
-                mimeType: 'text/html',
-                headers: 'Importance: High'
+                mimeType: 'text/html'
             )
         }
     }
