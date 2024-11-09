@@ -41,11 +41,13 @@ pipeline {
     post {
         always {
             emailext(
-                subject: "Build de ${env.JOB_NAME} #${env.BUILD_NUMBER} - ${currentBuild.result ?: 'SUCCESS'}",
+                subject: "Jenkins Build Notification - ${env.JOB_NAME} #${env.BUILD_NUMBER} - Status: ${currentBuild.result ?: 'SUCCESS'}",
                 body: """<p>Bonjour,</p>
                          <p>Le build <b>#${env.BUILD_NUMBER}</b> du job <b>${env.JOB_NAME}</b> est terminé avec le statut <b>${currentBuild.result ?: 'SUCCESS'}</b>.</p>
                          <p>Cliquez <a href="${env.BUILD_URL}">ici</a> pour voir les détails du build.</p>""",
-                to: 'aminedridia9@gmail.com'
+                to: 'aminedridia9@gmail.com',
+                mimeType: 'text/html',
+                headers: 'Importance: High'
             )
         }
     }
