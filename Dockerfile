@@ -6,9 +6,9 @@ WORKDIR /app
 
 # Installer ZAP (OWASP Zed Attack Proxy)
 RUN apt-get update && apt-get install -y wget && \
-    wget https://github.com/zaproxy/zaproxy/releases/download/v2.14.1/ZAP_2.14.1_linux.tar.gz && \
-    tar -xvzf ZAP_2.14.1_linux.tar.gz && \
-    mv ZAP_2.14.1 /zap
+    wget https://github.com/zaproxy/zaproxy/releases/download/v2.14.2/ZAP_2.14.2_linux.tar.gz && \
+    tar -xvzf ZAP_2.14.2_linux.tar.gz && \
+    mv ZAP_2.14.2 /zap
 
 # Copier l'artefact généré par Maven (le fichier JAR) dans le conteneur
 COPY ./target/tp-foyer-5.0.0.jar app.jar
