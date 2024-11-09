@@ -10,7 +10,7 @@ pipeline {
     environment {
         DOCKER_IMAGE_NAME = 'tp-foyer' // Docker image name
         DOCKER_TAG = '5.0.0' // Docker image tag
-        PATH = "$PATH:C:/Users/21626/AppData/Local/Programs/Python/PythonXX/Scripts" // Add the correct path to pre-commit
+        PATH = "$PATH:/home/vagrant/.local/bin" // Add the correct path to pre-commit
     }
 
     stages {
