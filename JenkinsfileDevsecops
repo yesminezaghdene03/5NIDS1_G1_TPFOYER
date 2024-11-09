@@ -13,7 +13,6 @@ pipeline {
     stages {
         stage('SCM Checkout') {
             steps {
-                // Cloner le dépôt et se placer sur la branche EmnaBelkhiria_NIDS1_G1
                 git branch: 'EmnaBelkhiria_NIDS1_G1', url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
             }
         }
@@ -27,12 +26,6 @@ pipeline {
         stage('Test') {
             steps {
                 sh 'mvn test'
-            }
-        }
-
-        stage('Package') {
-            steps {
-                sh 'mvn package'
             }
         }
 
@@ -54,6 +47,17 @@ pipeline {
             steps {
                 script {
                     sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
+                }
+            }
+        }
+
+        stage('ZAP Baseline Scan') {
+            steps {
+                script {
+                    // Exécution du scan de sécurité ZAP
+                    sh '''
+                    docker run -v $(pwd):/zap/wrk:rw -t owasp/zap2docker-stable zap-baseline.py -t http://localhost:8089
+                    '''
                 }
             }
         }

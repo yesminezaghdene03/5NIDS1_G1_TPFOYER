@@ -26,5 +26,16 @@ services:
     depends_on:
       - db  # Dépendance à la base de données
 
+  zap:
+    image: owasp/zap2docker-stable
+    container_name: zap
+    ports:
+      - "8090:8090"  # Port d'accès à l'interface web de ZAP
+    entrypoint: ["zap.sh", "-daemon", "-port", "8090", "-config", "api.disablekey=true"]
+    volumes:
+      - ./zap/wrk:/zap/wrk:rw  # Volume pour l'intégration des fichiers de travail avec ZAP
+    depends_on:
+      - app  # ZAP dépend de l'application pour le scan
+
 volumes:
   db_data:  # Volume persistant pour les données MySQL
