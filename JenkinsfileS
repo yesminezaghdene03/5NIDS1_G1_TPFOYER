@@ -58,20 +58,6 @@ pipeline {
                 sh 'mvn test || echo "Acceptance tests failed. Review required."'
             }
         }
-
-        stage('Manual Review') { // Revue manuelle
-            steps {
-                echo 'Manual review required before production deployment'
-            }
-        }
-
-        stage('Deploy') { // Déploiement avec Docker Compose
-            steps {
-                script {
-                    sh "docker-compose up -d"
-                }
-            }
-        }
     }
 
     post {
