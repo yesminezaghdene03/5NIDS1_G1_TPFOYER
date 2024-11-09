@@ -2,15 +2,15 @@ pipeline {
     agent any
 
     tools {
-        git 'Default' // Assurez-vous que 'Default' correspond à l'installation Git configurée dans Jenkins
-        maven 'M2_HOME'
-        jdk 'JAVA_HOME'
+        git 'Default' // Ensure 'Default' matches the Git installation name in Jenkins
+        maven 'M2_HOME' // Ensure 'M2_HOME' matches the Maven installation name in Jenkins
+        jdk 'JAVA_HOME' // Ensure 'JAVA_HOME' matches the JDK installation name in Jenkins
     }
 
     environment {
-        DOCKER_IMAGE_NAME = 'tp-foyer' // Nom de l'image Docker
-        DOCKER_TAG = '5.0.0' // Tag de l'image Docker
-        PATH = "$PATH:/home/vagrant/.local/bin" // Ajouter le chemin absolu de pre-commit au PATH
+        DOCKER_IMAGE_NAME = 'tp-foyer' // Docker image name
+        DOCKER_TAG = '5.0.0' // Docker image tag
+        PATH = "$PATH:C:/Users/21626/AppData/Local/Programs/Python/PythonXX/Scripts" // Add the correct path to pre-commit
     }
 
     stages {
@@ -22,15 +22,15 @@ pipeline {
 
         stage('Install Pre-Commit') {
             steps {
-                // Installer pre-commit pour l'utilisateur Jenkins
+                // Install pre-commit for the Jenkins user
                 sh 'pip install --user pre-commit'
             }
         }
 
         stage('Run Pre-Commit Hooks') {
             steps {
-                // Exécuter les hooks de pré-commit en utilisant le chemin absolu
-                sh '/home/vagrant/.local/bin/pre-commit run --all-files'
+                // Run pre-commit hooks using the correct path
+                sh 'pre-commit run --all-files'
             }
         }
     }
