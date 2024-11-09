@@ -53,7 +53,19 @@ pipeline {
         stage ('OWASP Dependency-Check') {
             steps {
                 dependencyCheck additionalArguments: '--scan .', 
-                        odcInstallation: 'DP-check'
+                                odcInstallation: 'DP-check'
+            }
+        }
+        
+        stage('Archive Dependency-Check Report') {
+            steps {
+                archiveArtifacts artifacts: 'dependency-check-report.xml', allowEmptyArchive: true
+            }
+        }
+
+        stage('Publish Dependency-Check Results') {
+            steps {
+                dependencyCheckPublisher pattern: 'dependency-check-report.xml'
             }
         }
     }
