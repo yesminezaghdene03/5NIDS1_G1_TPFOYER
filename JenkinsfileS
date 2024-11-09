@@ -67,7 +67,7 @@ pipeline {
         stage('Dependency Check') {
             steps {
                 script {
-                    sh 'mvn org.owasp:dependency-check-maven:8.1.2:check -Dformat=HTML -DoutputDirectory=target'
+                    sh 'mvn org.owasp:dependency-check-maven:check -Dformat=HTML -DoutputDirectory=target'
                 }
             }
         }
