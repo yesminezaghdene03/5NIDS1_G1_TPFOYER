@@ -2,12 +2,10 @@ pipeline {
     agent any
 
     environment {
-        SONAR_PROJECT_KEY = 'TP-Foyer2'
-        SONAR_HOST_URL = 'http://192.168.33.10:9000'
+
         NEXUS_URL = 'http://192.168.33.10:8081' // Replace with your Nexus URL
         NEXUS_REPO = 'maven-releases' // Replace with your Nexus repository name
-        NEXUS_USERNAME = 'admin' // Replace with your Nexus username
-        NEXUS_PASSWORD = 'Sonar123456$' // Replace with your Nexus password
+
     }
 
     stages {
@@ -71,6 +69,7 @@ stage('Deploy to Nexus') {
         }
 
         // Deploy the file to Nexus
+        withCredentials([usernamePassword(credentialsId: 'nexusCredential', usernameVariable: 'NEXUS_USERNAME', passwordVariable: 'NEXUS_PASSWORD')]) {
         sh """
         mvn -s /usr/share/maven/conf/settings.xml deploy:deploy-file \
           -DgroupId=com.example \
@@ -83,6 +82,7 @@ stage('Deploy to Nexus') {
           -Dusername=$NEXUS_USERNAME \
           -Dpassword=$NEXUS_PASSWORD
         """
+        }
     }
 }
     stage('Image') {
