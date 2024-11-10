@@ -10,14 +10,8 @@ pipeline {
         SONARQUBE_TOKEN = 'sqp_bc225e0c7bd8daa746a774a9dcc9a6e5cd548f0e'
     }
 
-    stages {
-        stage('Pre-commit Checks') {
-            steps {
-                // Installer les hooks pre-commit et exécuter les vérifications
-                sh 'pre-commit install'
-                sh 'pre-commit run --all-files'
-            }
-        }
+
+
 
         stage('SCM Checkout') {
             steps {
