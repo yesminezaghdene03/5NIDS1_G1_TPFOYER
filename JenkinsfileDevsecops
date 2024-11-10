@@ -49,6 +49,16 @@ pipeline {
             }
         }
 
+        // Nouveau stage pour construire l'image Docker
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    echo "Construction de l'image Docker..."
+                    sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
+                }
+            }
+        }
+
         stage('Docker Pull') {
             steps {
                 sh "docker pull ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
@@ -66,7 +76,7 @@ pipeline {
             steps {
                 script {
                     echo "Vérification de l'état de santé du conteneur"
-                    sh 'sleep 20' // Temps d'attente pour permettre le lancement du conteneur
+                    sh 'sleep 60' // Temps d'attente pour permettre le lancement du conteneur
                     try {
                         def containerID = sh(script: "docker ps -q --filter 'ancestor=${DOCKER_IMAGE_NAME}:${DOCKER_TAG}'", returnStdout: true).trim()
                         if (containerID) {
