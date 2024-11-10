@@ -9,12 +9,12 @@ services:
     ports:
       - "3307:3306"
     volumes:
-      - db_data:/var/lib/mysql
+      - db_data:/var/lib/mysql  # Volume pour persister les données de la base de données
 
   app:
-    image: emnabelkhiria-5nids1:latest
+    image: emnabelkhiria-5nids1:latest  # Image de l'application
     ports:
-      - "8089:8089"
+      - "8089:8089"  # Mappage du port 8089 de l'hôte vers le conteneur
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db?createDatabaseIfNotExist=true
       SPRING_DATASOURCE_USERNAME: root
@@ -24,21 +24,7 @@ services:
       SERVER_PORT: 8089
       SERVER_SERVLET_CONTEXT_PATH: /tpfoyer
     depends_on:
-      - db
-
-  zap:
-    image: zaproxy/zap-stable
-    container_name: zap-${CI_COMMIT_REF_NAME}  # Nom dynamique pour éviter les conflits
-    ports:
-      - "8090:8090"
-    entrypoint: ["zap.sh", "-daemon", "-port", "8090", "-config", "api.disablekey=true"]
-    volumes:
-      - ./zap/wrk:/zap/wrk:rw
-    depends_on:
-      - app
-    environment:
-      # Définir l'URL cible de l'application à scanner
-      TARGET_URL: http://app:8089/tpfoyer  # URL de l'application pour ZAP
+      - db  # Dépendance à la base de données
 
 volumes:
-  db_data:
+  db_data:  # Volume persistant pour les données MySQL
