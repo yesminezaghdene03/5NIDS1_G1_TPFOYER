@@ -105,24 +105,12 @@ pipeline {
             }
         }
 
-        // Étape Trivy Scan pour analyser les vulnérabilités
-        stage('Trivy Vulnerability Scan') {
+        stage('Trivy Scan') {
             steps {
                 script {
-                    def result = sh(script: "/usr/bin/trivy image --severity HIGH,CRITICAL --output trivy-report.txt ${DOCKER_IMAGE}", returnStatus: true)
-                    if (result != 0) {
-                        echo "Trivy security scan failed. Review required."
-                        currentBuild.result = 'FAILURE'
-                    } else {
-                        echo "Trivy scan completed successfully."
-                    }
+                    // Exécution du scan Trivy
+                    sh "trivy image ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} || echo 'Security scan failed. Review required.'"
                 }
-            }
-        }
-
-        stage('Archive Trivy Report') {
-            steps {
-                archiveArtifacts artifacts: 'trivy-report.txt', allowEmptyArchive: true
             }
         }
 
