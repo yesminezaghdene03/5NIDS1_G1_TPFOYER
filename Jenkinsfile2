@@ -109,13 +109,12 @@ pipeline {
         stage('Trivy Vulnerability Scan') {
             steps {
                 script {
-                    // Exécution de Trivy pour scanner l'image Docker construite
-                    sh 'docker run --rm -v /var/lib/jenkins/workspace/devsecops:/workspace -v $HOME/.cache/trivy:/root/.cache/ aquasec/trivy image --severity HIGH,CRITICAL omranihadhemi/$JOB_NAME:v1.$BUILD_ID > trivy-report.txt'
+                    // Exécution du scan avec Trivy localement dans Vagrant
+                    sh '/usr/local/bin/trivy image --severity HIGH,CRITICAL omranihadhemi/devsecops:v1.9'
                 }
             }
         }
 
-        // Étape pour archiver le rapport Trivy
         stage('Archive Trivy Report') {
             steps {
                 archiveArtifacts artifacts: 'trivy-report.txt', allowEmptyArchive: true
