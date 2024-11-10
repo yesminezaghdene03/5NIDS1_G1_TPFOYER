@@ -78,7 +78,8 @@ pipeline {
                 script {
                     // Démarrer les services via docker-compose
                     sh "docker-compose up -d"
-                    sh "docker-compose ps"  // Vérification que les conteneurs sont bien démarrés
+                    // Vérification que les conteneurs sont bien démarrés
+                    sh "docker-compose ps"
                 }
             }
         }
@@ -127,7 +128,9 @@ pipeline {
         stage('Nmap Open Port Verification') {
             steps {
                 script {
-                    sleep(time: 2, unit: 'MINUTES')  // Attente pour donner le temps au conteneur de démarrer
+                    // Attendre 5 minutes pour donner le temps au conteneur de démarrer
+                    echo "Attente de 5 minutes pour le démarrage des conteneurs"
+                    sleep(time: 5, unit: 'MINUTES')
 
                     // Vérifier si le conteneur est bien en cours d'exécution
                     def containerStatus = sh(script: "docker-compose ps -q app", returnStdout: true).trim()

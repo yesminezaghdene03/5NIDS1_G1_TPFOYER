@@ -9,7 +9,13 @@ services:
     ports:
       - "3307:3306"  # Le port hôte 3307 est mappé au port 3306 du conteneur
     volumes:
-      - db_data:/var/lib/mysql  # Ajouter un volume pour persister les données
+      - db_data:/var/lib/mysql  # Volume persistant pour les données MySQL
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "--host=localhost", "--user=root", "--password=example"]
+      interval: 30s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
 
   app:
     image: emnabelkhiria-5nids1:latest  # Utiliser l'image construite par Jenkins
@@ -24,7 +30,8 @@ services:
       SERVER_PORT: 8089
       SERVER_SERVLET_CONTEXT_PATH: /tpfoyer
     depends_on:
-      - db  # Assurer que le conteneur de la base de données est prêt avant l'application
+      db:  # Assurer que le conteneur de la base de données est prêt avant l'application
+        condition: service_healthy  # Utiliser une condition pour vérifier que la base de données est prête
 
 volumes:
   db_data:  # Volume persistant pour les données MySQL
