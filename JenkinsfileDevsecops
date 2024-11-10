@@ -102,6 +102,49 @@ pipeline {
                 sh 'docker system prune -f'
             }
         }
+
+        stage('Nmap Open Port Verification') {
+            steps {
+                script {
+                    sleep(time: 2, unit: 'MINUTES')
+                    // Get container IP address from Docker
+                    def containerIP = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' tp_foyer_app", returnStdout: true).trim()
+
+                    // If the IP is empty, handle the error
+                    if (!containerIP) {
+                        error("Failed to resolve container IP address.")
+                    }
+
+                    def allowedPort = 8089
+                    // Run nmap and save output to a file
+                    def nmapOutput = sh(script: "nmap -p- ${containerIP}", returnStdout: true).trim()
+
+                    // Output raw Nmap scan for debugging purposes
+                    echo "Raw Nmap scan output:\n${nmapOutput}"
+                    // Find open ports using regex
+                    def openPorts = []
+                    def lines = nmapOutput.split('\n')
+                    for (int i = 0; i < lines.size(); i++) {
+                        def line = lines[i].trim()
+                        if (line.contains("open")) {
+                            def parts = line.split("\\s+")
+                            if (parts.length > 0) {
+                                def portInfo = parts[0]  // This should be "8089/tcp"
+                                def portNumber = portInfo.split("/")[0]  // Extract the port number
+                                echo "Found open port: ${portNumber}"
+                                openPorts.add(portNumber as Integer)
+                            }
+                        }
+                    }
+                    echo "Open ports: ${openPorts.join(', ')}"
+                    if (openPorts.size() != 1 || openPorts[0] != allowedPort) {
+                        error("Build failed: Ports other than ${allowedPort} are open.")
+                    } else {
+                        echo "Only port ${allowedPort} is open. Proceeding with the build."
+                    }
+                }
+            }
+        }
     }
 
     post {
