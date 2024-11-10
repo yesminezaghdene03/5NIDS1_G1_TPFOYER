@@ -5,11 +5,8 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Utilisation explicite de la closure avec paramètre
-                    { 
-                        // Ajoute ici ton code pour construire l'image Docker
-                        // Exemple : sh 'docker build -t my-image .'
-                    }()
+                    // Code pour construire l'image Docker
+                    sh 'docker build -t my-image .'
                 }
             }
         }
@@ -17,11 +14,8 @@ pipeline {
         stage('Push Docker Image to DockerHub') {
             steps {
                 script {
-                    // Utilisation explicite de la closure avec paramètre
-                    { 
-                        // Ajoute ici ton code pour pousser l'image Docker sur DockerHub
-                        // Exemple : sh 'docker push my-image'
-                    }()
+                    // Code pour pousser l'image Docker sur DockerHub
+                    sh 'docker push my-image'
                 }
             }
         }
@@ -29,11 +23,8 @@ pipeline {
         stage('Docker Compose Down') {
             steps {
                 script {
-                    // Utilisation explicite de la closure avec paramètre
-                    { 
-                        // Ajoute ici ton code pour arrêter les conteneurs Docker
-                        // Exemple : sh 'docker-compose down'
-                    }()
+                    // Code pour arrêter les conteneurs Docker
+                    sh 'docker-compose down'
                 }
             }
         }
@@ -41,11 +32,8 @@ pipeline {
         stage('Docker Compose Up') {
             steps {
                 script {
-                    // Utilisation explicite de la closure avec paramètre
-                    { 
-                        // Ajoute ici ton code pour démarrer les conteneurs Docker
-                        // Exemple : sh 'docker-compose up -d'
-                    }()
+                    // Code pour démarrer les conteneurs Docker
+                    sh 'docker-compose up -d'
                 }
             }
         }
@@ -53,11 +41,8 @@ pipeline {
         stage('Prometheus') {
             steps {
                 script {
-                    // Utilisation explicite de la closure avec paramètre
-                    { 
-                        // Ajoute ici ton code pour l'intégration avec Prometheus
-                        // Exemple : sh 'curl -s -X POST http://prometheus-server:9090'
-                    }()
+                    // Code pour l'intégration avec Prometheus
+                    sh 'curl -s -X POST http://prometheus-server:9090'
                 }
             }
         }
@@ -65,11 +50,8 @@ pipeline {
         stage('Grafana') {
             steps {
                 script {
-                    // Utilisation explicite de la closure avec paramètre
-                    { 
-                        // Ajoute ici ton code pour l'intégration avec Grafana
-                        // Exemple : sh 'curl -s -X POST http://grafana-server:3000'
-                    }()
+                    // Code pour l'intégration avec Grafana
+                    sh 'curl -s -X POST http://grafana-server:3000'
                 }
             }
         }
@@ -77,11 +59,8 @@ pipeline {
         stage('Cleanup Old Docker Images') {
             steps {
                 script {
-                    // Utilisation explicite de la closure avec paramètre
-                    { 
-                        // Ajoute ici ton code pour nettoyer les anciennes images Docker
-                        // Exemple : sh 'docker image prune -f'
-                    }()
+                    // Code pour nettoyer les anciennes images Docker
+                    sh 'docker image prune -f'
                 }
             }
         }
