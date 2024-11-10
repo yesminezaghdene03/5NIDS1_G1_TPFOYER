@@ -55,11 +55,13 @@ pipeline {
             steps {
                 script {
                     sh '''
-                    docker run -v $(pwd):/zap/wrk:rw -t owasp/zap2docker-stable zap-baseline.py -t http://localhost:8089 -d
+                    docker run -v $(pwd):/zap/wrk:rw -t zaproxy/zap-stable zap-baseline.py -t http://localhost:8089 -d
                     '''
                 }
             }
         }
+
+
 
         stage('Docker Push') {
             steps {
