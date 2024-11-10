@@ -3,7 +3,7 @@ pipeline {
 
     tools {
         jdk 'JAVA_HOME'
-        maven 'M2_Home'  // Correction du nom de l'outil Maven
+        maven 'M2_Home'
     }
 
     stages {
@@ -43,7 +43,7 @@ pipeline {
 
         stage('JUnit/Mockito Tests') {
             steps {
-                sh 'mvn test' 
+                sh 'mvn test'
             }
         }
 
@@ -129,9 +129,7 @@ pipeline {
         stage('Email Notification') {
             steps {
                 mail bcc: '', 
-                     body: '''
-Final Report: The pipeline has completed successfully. No action required.
-''', 
+                     body: '''Final Report: The pipeline has completed successfully. No action required.''', 
                      cc: '', 
                      from: '', 
                      replyTo: '', 
@@ -144,9 +142,9 @@ Final Report: The pipeline has completed successfully. No action required.
     post {
         success {
             script {
-                emailext (
+                emailext(
                     subject: "Build Success: ${currentBuild.fullDisplayName}",
-                    body: "Le build a réussi ! Consultez les détails à ${env.BUILD_URL}",
+                    body: """Le build a réussi ! Consultez les détails à ${env.BUILD_URL}""",
                     recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'DevelopersRecipientProvider']],
                     to: 'aminedridia9@gmail.com'
                 )
@@ -154,9 +152,9 @@ Final Report: The pipeline has completed successfully. No action required.
         }
         failure {
             script {
-                emailext (
+                emailext(
                     subject: "Build Failure: ${currentBuild.fullDisplayName}",
-                    body: "Le build a échoué ! Vérifiez les détails à ${env.BUILD_URL}",
+                    body: """Le build a échoué ! Vérifiez les détails à ${env.BUILD_URL}""",
                     recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'DevelopersRecipientProvider']],
                     to: 'aminedridia9@gmail.com'
                 )
@@ -164,6 +162,13 @@ Final Report: The pipeline has completed successfully. No action required.
         }
         always {
             script {
-                emailext (
+                emailext(
                     subject: "Build Notification: ${currentBuild.fullDisplayName}",
-                    body: "Consultez les 
+                    body: """Consultez les détails du build à ${env.BUILD_URL}""",
+                    recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'DevelopersRecipientProvider']],
+                    to: 'aminedridia9@gmail.com'
+                )
+            }
+        }
+    }
+}
