@@ -29,6 +29,14 @@ pipeline {
             }
         }
 
+        stage('Run Application') {
+                steps {
+                    // Démarrer l'application Spring Boot
+                    sh 'mvn spring-boot:run'
+                }
+            }
+        }
+
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube Server') {
