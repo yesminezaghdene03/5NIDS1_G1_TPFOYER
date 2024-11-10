@@ -2,25 +2,25 @@ pipeline {
     agent any
 
     stages {
-        stage ('Git Checkout') {
+        stage('Git Checkout') {
             steps {
                 git branch: 'hadhemiOmrani_5NIDS_G1', url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
             }
         }
         
-        stage ('UNIT Testing') {
+        stage('UNIT Testing') {
             steps {
                 sh 'mvn test'
             }
         }
         
-        stage ('Integration Testing') {
+        stage('Integration Testing') {
             steps {
                 sh 'mvn verify'
             }
         }
         
-        stage ('Maven Build') {
+        stage('Maven Build') {
             steps {
                 sh 'mvn clean install'
             }
@@ -32,7 +32,7 @@ pipeline {
             }
         }
 
-        stage ('SonarQube Analysis') {
+        stage('SonarQube Analysis') {
             steps {
                 script {
                     withSonarQubeEnv(credentialsId: 'sonar-api-key') {
@@ -42,7 +42,7 @@ pipeline {
             }
         }
         
-        stage ('Quality Gate Status') {
+        stage('Quality Gate Status') {
             steps {
                 script {
                     waitForQualityGate abortPipeline: false, credentialsId: 'sonar-api-key'
@@ -50,7 +50,7 @@ pipeline {
             }
         }
         
-        stage ('OWASP Dependency-Check') {
+        stage('OWASP Dependency-Check') {
             steps {
                 dependencyCheck additionalArguments: '--scan .', 
                                 odcInstallation: 'DP-check'
@@ -69,7 +69,7 @@ pipeline {
             }
         }
 
-        stage ('Nexus') {
+        stage('Nexus') {
             steps {
                 script {
                     def readPomVersion = readMavenPom file: 'pom.xml'
@@ -109,8 +109,13 @@ pipeline {
         stage('Trivy Vulnerability Scan') {
             steps {
                 script {
-                    // Exécution du scan avec Trivy localement dans Vagrant
-                    sh '/usr/local/bin/trivy image --severity HIGH,CRITICAL omranihadhemi/devsecops:v1.9'
+                    def result = sh(script: '/usr/bin/trivy image --severity HIGH,CRITICAL --output trivy-report.txt omranihadhemi/devsecops:v1.9', returnStatus: true)
+                    if (result != 0) {
+                        echo "Trivy security scan failed. Review required."
+                        currentBuild.result = 'FAILURE'
+                    } else {
+                        echo "Trivy scan completed successfully."
+                    }
                 }
             }
         }
@@ -121,7 +126,7 @@ pipeline {
             }
         }
 
-        stage ('Docker Hub') {
+        stage('Docker Hub') {
             steps {
                 script {
                     withCredentials([string(credentialsId: 'dockerhub_pwd', variable: 'docker_hub_cred')]) {
