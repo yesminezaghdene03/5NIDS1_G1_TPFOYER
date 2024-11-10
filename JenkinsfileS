@@ -58,9 +58,9 @@ pipeline {
             }
         }
 
-        stage('Security Scan') {
+        stage('Trivy Scan') {
             steps {
-                sh 'trivy image ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} || echo "Security scan failed. Review required."'
+                sh "trivy image ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} || echo 'Security scan failed. Review required.'"
             }
         }
 
