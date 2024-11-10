@@ -55,7 +55,7 @@ pipeline {
             steps {
                 script {
                     sh '''
-                    docker run -v $(pwd):/zap/wrk:rw -t owasp/zap2docker-stable zap-baseline.py -t http://localhost:8089
+                    docker run -v $(pwd):/zap/wrk:rw -t owasp/zap2docker-stable zap-baseline.py -t http://localhost:8089 -d
                     '''
                 }
             }
@@ -72,7 +72,6 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    // Exécuter docker-compose pour démarrer les services
                     sh "docker-compose up -d"
                     sh "docker-compose ps"
                 }
@@ -82,7 +81,6 @@ pipeline {
         stage('Docker Bench Security Check') {
             steps {
                 script {
-                    // Exécuter le contrôle de sécurité Docker Bench
                     sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock --security-opt seccomp=unconfined --name docker-bench -v $PWD:/tmp docker/docker-bench-security > docker-bench-report.txt'
                 }
             }
@@ -102,7 +100,6 @@ pipeline {
 
         stage('Cleanup') {
             steps {
-                // Nettoyage après l'exécution de la pipeline
                 sh 'docker-compose down'
                 sh 'docker system prune -f'
             }
@@ -111,7 +108,6 @@ pipeline {
 
     post {
         always {
-            // Nettoyage après chaque exécution
             sh 'docker-compose down'
             sh 'docker system prune -f'
         }
