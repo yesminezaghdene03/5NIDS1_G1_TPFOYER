@@ -27,7 +27,7 @@ services:
       - db  # Dépendance à la base de données
 
   zap:
-    image: owasp/zap2docker-stable
+    image: zaproxy/zap-stable
     container_name: zap
     ports:
       - "8090:8090"  # Port d'accès à l'interface web de ZAP
