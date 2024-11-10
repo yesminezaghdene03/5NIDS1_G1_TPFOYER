@@ -61,11 +61,18 @@ pipeline {
         stage('Docker Push') {
             steps {
                 script {
-                    // Pousser l'image Docker sur le registre
-                    sh "docker push ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
+                    // Utiliser les credentials Docker créés
+                    withCredentials([usernamePassword(credentialsId: 'docker-credentials-id', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        // Se connecter au registre Docker
+                        sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
+
+                        // Pousser l'image Docker vers le registre
+                        sh "docker push ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
+                    }
                 }
             }
         }
+
 
         stage('Deploy') {
             steps {
