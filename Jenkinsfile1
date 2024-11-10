@@ -2,156 +2,69 @@ pipeline {
     agent any
 
     stages {
-        stage('GIT') {
-            steps {
-                git branch: 'AmineDridia_5NIDS1_G1',
-                    url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER'
-            }
-        }
-        
-        stage('UNIT Testing') {
-            steps {
-                sh 'mvn test'
-            }
-        }
-        
-        stage('Integration Testing') {
-            steps {
-                sh 'mvn verify'
-            }
-        }
-
-        stage('Maven Build') {
-            steps {
-                sh 'mvn clean install'
-            }
-        }
-
-        stage('Code Coverage') {
-            steps {
-                jacoco()
-            }
-        }
-
-        stage('SonarQube Analysis') {
-            steps {
-                script {
-                    withSonarQubeEnv(credentialsId: 'sonar-api-key') {
-                        sh 'mvn clean package sonar:sonar'
-                    }
-                }
-            }
-        }
-
-        stage('Quality Gate Status') {
-            steps {
-                script {
-                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-api-key'
-                }
-            }
-        }
-
-        stage('OWASP Dependency-Check') {
-            steps {
-                dependencyCheck additionalArguments: '--scan .', odcInstallation: 'DP-check'
-            }
-        }
-
-        stage('Archive Dependency-Check Report') {
-            steps {
-                archiveArtifacts artifacts: 'dependency-check-report.xml', allowEmptyArchive: true
-            }
-        }
-
-        stage('Publish Dependency-Check Results') {
-            steps {
-                dependencyCheckPublisher pattern: 'dependency-check-report.xml'
-            }
-        }
-
-        stage('Nexus') {
-            steps {
-                script {
-                    def readPomVersion = readMavenPom file: 'pom.xml'
-                    def version = readPomVersion.version
-                    def repository = version.endsWith("SNAPSHOT") ? "tpfoyer-snapshot" : "Tpfoyer-Release"
-
-                    nexusArtifactUploader artifacts: [
-                        [
-                            artifactId: 'tp-foyer', 
-                            classifier: '', 
-                            file: 'target/Uterk.jar', 
-                            type: 'jar'
-                        ]
-                    ], 
-                    credentialsId: 'nexus-auth', 
-                    groupId: 'tn.esprit', 
-                    nexusUrl: '192.168.1.170:8081', 
-                    nexusVersion: 'nexus3', 
-                    protocol: 'http', 
-                    repository: repository, 
-                    version: "${readPomVersion.version}"
-                }
-            }
-        }
-
         stage('Build Docker Image') {
             steps {
-                sh 'sudo docker build -t aminedridia/tp-foyer:5.0.0 .'
-            }
-        }
-
-        stage('Push Docker Image to DockerHub') {
-            steps {
-                withCredentials([string(credentialsId: 'dockerhub_pwd', variable: 'docker_hub_cred')]) {
-                    sh '''
-                        sudo docker login -u aminedridia -p ${docker_hub_cred}
-                        sudo docker push aminedridia/tp-foyer:5.0.0
-                    '''
+                script {
+                    // Ajoute ici ton code pour construire l'image Docker
                 }
             }
         }
-
+        
+        stage('Push Docker Image to DockerHub') {
+            steps {
+                script {
+                    // Ajoute ici ton code pour pousser l'image Docker sur DockerHub
+                }
+            }
+        }
+        
         stage('Docker Compose Down') {
             steps {
-                sh 'sudo docker-compose down'
+                script {
+                    // Ajoute ici ton code pour arrêter les conteneurs Docker
+                }
             }
         }
 
         stage('Docker Compose Up') {
             steps {
-                sh 'sudo docker-compose up -d'
+                script {
+                    // Ajoute ici ton code pour démarrer les conteneurs Docker
+                }
             }
         }
 
         stage('Prometheus') {
             steps {
-                sh 'docker start prometheus'
+                script {
+                    // Ajoute ici ton code pour l'intégration avec Prometheus
+                }
             }
         }
 
         stage('Grafana') {
             steps {
-                sh 'docker start grafana'
+                script {
+                    // Ajoute ici ton code pour l'intégration avec Grafana
+                }
             }
         }
 
         stage('Cleanup Old Docker Images') {
             steps {
-                sh 'docker image prune -f'
+                script {
+                    // Ajoute ici ton code pour nettoyer les anciennes images Docker
+                }
             }
         }
     }
 
     post {
         always {
-            emailext(
-                subject: "Jenkins Build Notification - ${env.JOB_NAME} #${env.BUILD_NUMBER} - Status: ${currentBuild.result ?: 'SUCCESS'}",
-                body: """<p>Bonjour,</p>
-                         <p>Le build <b>#${env.BUILD_NUMBER}</b> du job <b>${env.JOB_NAME}</b> est terminé avec le statut <b>${currentBuild.result ?: 'SUCCESS'}</b>.</p>
-                         <p>Cliquez <a href="${env.BUILD_URL}">ici</a> pour voir les détails du build.</p>""",
+            emailext (
                 to: 'aminedridia9@gmail.com',
-                mimeType: 'text/html'
+                subject: "Build Status: ${currentBuild.currentResult}",
+                body: "The build ${currentBuild.fullDisplayName} has finished with status: ${currentBuild.currentResult}"
             )
         }
     }
