@@ -73,7 +73,7 @@ pipeline {
                             def hasHealthCheck = sh(script: "docker inspect --format='{{.State.Health}}' ${containerID}", returnStdout: true).trim()
                             if (hasHealthCheck != "null") {
                                 // Intégration de retry ici
-                                retry(9) { // Attendre jusqu'à 15 minutes (9 retries de 1 minute)
+                                retry(5) {
                                     def healthStatus = sh(script: "docker inspect --format='{{.State.Health.Status}}' ${containerID}", returnStdout: true).trim()
                                     if (healthStatus == 'healthy') {
                                         echo "Le conteneur est en bonne santé."
@@ -103,7 +103,7 @@ pipeline {
                     def containerStatus, containerIP
                     def allowedPort = 8089
 
-                    retry(5) { // Tenter plusieurs fois pour récupérer l'IP
+                    retry(9) { // Tenter plusieurs fois pour récupérer l'IP
                         sleep(time: 3, unit: 'MINUTES')
                         containerStatus = sh(script: "docker-compose ps -q app", returnStdout: true).trim()
                         if (!containerStatus) {
