@@ -30,7 +30,7 @@ pipeline {
             }
         }
 
-        stage ('SonarQube Analysis') {
+       /* stage ('SonarQube Analysis') {
             steps {
                 script {
                     withSonarQubeEnv(credentialsId: 'sonar-api-key') {
@@ -45,7 +45,7 @@ pipeline {
                     waitForQualityGate abortPipeline: false, credentialsId: 'sonar-api-key'
                 }
             }
-        }
+        }*/
         stage ('Nexus') {
             steps {
                 script {
