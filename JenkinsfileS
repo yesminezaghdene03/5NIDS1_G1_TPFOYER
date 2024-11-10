@@ -16,6 +16,7 @@ pipeline {
     }
 
     stages {
+        // Phase de Développement
         stage('Checkout') {
             steps {
                 git branch: 'YesminZaghden_NIDS1_G1', url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
@@ -40,27 +41,22 @@ pipeline {
             }
         }
 
-        stage('Vault Initialization') {
+        stage('Build') {
             steps {
-                script {
-                    // Utilisation du token Vault à partir des variables d'environnement Jenkins
-                    sh "export VAULT_TOKEN=${env.VAULT_TOKEN}"
-                    sh 'vault status' // Vérifie la connexion au Vault
-                }
+                sh 'mvn clean install'
             }
         }
 
-        stage('Docker Build') {
+        stage('Test') {
             steps {
-                script {
-                    sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
-                }
+                sh 'mvn test'
             }
         }
 
-        stage('Trivy Scan') {
+        // Phase d'Acceptation
+        stage('Acceptance Tests') {
             steps {
-                sh "trivy image ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} || echo 'Security scan failed. Review required.'"
+                sh 'mvn test || echo "Acceptance tests failed. Review required."'
             }
         }
 
@@ -78,9 +74,84 @@ pipeline {
             }
         }
 
-        stage('Acceptance Tests') {
+        // Phase de Production
+        stage('Docker Build') {
             steps {
-                sh 'mvn test || echo "Acceptance tests failed. Review required."'
+                script {
+                    sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
+                }
+            }
+        }
+
+        stage('Trivy Scan') {
+            steps {
+                sh "trivy image ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} || echo 'Security scan failed. Review required.'"
+            }
+        }
+
+        stage('Upload Artifact') {
+            steps {
+                nexusArtifactUploader(
+                    nexusVersion: 'nexus3',
+                    protocol: 'http',
+                    nexusUrl: '192.168.50.4:8081', // Ajout du protocole http://
+                    groupId: 'tn.esprit',
+                    version: '5.0.0', // Assurez-vous que cette version est correcte pour votre déploiement
+                    repository: 'tp-foyer2',
+                    credentialsId: 'nexus-credentials', // Utilisez l'ID configuré ici
+                    artifacts: [
+                        [artifactId: 'tp-foyer', classifier: '', file: 'target/tp-foyer-5.0.0.jar', type: 'jar']
+                    ]
+                )
+            }
+        }
+
+        // Phase des Opérations
+        stage('Docker Push') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'Docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    script {
+                        // Se connecter à Docker Hub avec les credentials Jenkins
+                        sh "docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD"
+
+                        // Pousser l'image dans Docker Hub avec le bon nom d'utilisateur
+                        sh "docker push yesmin1/tp-foyer:5.0.0"
+                    }
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    sh "docker-compose up -d"
+                }
+            }
+        }
+
+        stage('Start Prometheus') {
+            steps {
+                script {
+                    sh 'docker start prometheus'
+                }
+            }
+        }
+
+        stage('Start Grafana') {
+            steps {
+                script {
+                    sh 'docker start grafana'
+                }
+            }
+        }
+
+        stage('Vault Initialization') {
+            steps {
+                script {
+                    // Utilisation du token Vault à partir des variables d'environnement Jenkins
+                    sh "export VAULT_TOKEN=${env.VAULT_TOKEN}"
+                    sh 'vault status' // Vérifie la connexion au Vault
+                }
             }
         }
 
@@ -93,14 +164,29 @@ pipeline {
                 }
             }
         }
+
     }
 
     post {
+        always {
+            // Debugging step to check the directory structure
+            sh 'echo "Listing directory contents:"'
+            sh 'ls -R target/surefire-reports/'  // This will list the files in the 'surefire-reports' folder
+
+            // Then, attempt to gather JUnit reports
+            junit '**/target/surefire-reports/*.xml'
+            archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true
+        }
         success {
-            echo 'Pipeline completed successfully. Ready for production.'
+            echo 'Build and deployment successful!'
+            mail to: 'yesminzaghden1@gmail.com',
+                 subject: "Build Success - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                 body: "The build was successful! Check the details at ${env.BUILD_URL}"
         }
         failure {
-            echo 'Pipeline failed. Resolve issues before production deployment.'
+            mail to: 'yesminzaghden1@gmail.com',
+                 subject: "Build Failure - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                 body: "The build failed. Please check the details at ${env.BUILD_URL}"
         }
     }
 }
