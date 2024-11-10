@@ -9,6 +9,11 @@ pipeline {
 
 
     stages {
+           stage('Setup') {
+                    steps {
+                        sh 'git config --global http.postBuffer 524288000'
+                    }
+                }
 
         // Pre-Commit Phase
         stage('Pre-Commit: Code Linting') {
