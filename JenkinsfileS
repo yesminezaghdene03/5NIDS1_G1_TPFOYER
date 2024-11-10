@@ -60,7 +60,7 @@ pipeline {
             }
         }
 
-        stage('Dependency Check') {
+        stage('Dependency Check : owasp') {
             steps {
                 script {
                     // Force la mise à jour des données CVE avant l'analyse pour éviter les erreurs de cache
