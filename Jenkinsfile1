@@ -8,8 +8,92 @@ pipeline {
                     url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER'
             }
         }
+        
+        stage('UNIT Testing') {
+            steps {
+                sh 'mvn test'
+            }
+        }
+        
+        stage('Integration Testing') {
+            steps {
+                sh 'mvn verify'
+            }
+        }
 
-        // Autres étapes de compilation, analyse, déploiement, etc.
+        stage('Maven Build') {
+            steps {
+                sh 'mvn clean install'
+            }
+        }
+
+        stage('Code Coverage') {
+            steps {
+                jacoco()
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    withSonarQubeEnv(credentialsId: 'sonar-api-key') {
+                        sh 'mvn clean package sonar:sonar'
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate Status') {
+            steps {
+                script {
+                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-api-key'
+                }
+            }
+        }
+
+        stage('OWASP Dependency-Check') {
+            steps {
+                dependencyCheck additionalArguments: '--scan .', odcInstallation: 'DP-check'
+            }
+        }
+
+        stage('Archive Dependency-Check Report') {
+            steps {
+                archiveArtifacts artifacts: 'dependency-check-report.xml', allowEmptyArchive: true
+            }
+        }
+
+        stage('Publish Dependency-Check Results') {
+            steps {
+                dependencyCheckPublisher pattern: 'dependency-check-report.xml'
+            }
+        }
+
+        stage('Nexus') {
+            steps {
+                script {
+                    def readPomVersion = readMavenPom file: 'pom.xml'
+                    def version = readPomVersion.version
+                    def repository = version.endsWith("SNAPSHOT") ? "tpfoyer-snapshot" : "Tpfoyer-Release"
+
+                    nexusArtifactUploader artifacts: [
+                        [
+                            artifactId: 'tp-foyer', 
+                            classifier: '', 
+                            file: 'target/Uterk.jar', 
+                            type: 'jar'
+                        ]
+                    ], 
+                    credentialsId: 'nexus-auth', 
+                    groupId: 'tn.esprit', 
+                    nexusUrl: '192.168.1.170:8081', 
+                    nexusVersion: 'nexus3', 
+                    protocol: 'http', 
+                    repository: repository, 
+                    version: "${readPomVersion.version}"
+                }
+            }
+        }
 
         stage('Build Docker Image') {
             steps {
@@ -19,21 +103,42 @@ pipeline {
 
         stage('Push Docker Image to DockerHub') {
             steps {
-                sh '''
-                    sudo docker login -u aminedridia -p adminamine 
-                    sudo docker push aminedridia/tp-foyer:5.0.0
-                '''
+                withCredentials([string(credentialsId: 'dockerhub_pwd', variable: 'docker_hub_cred')]) {
+                    sh '''
+                        sudo docker login -u aminedridia -p ${docker_hub_cred}
+                        sudo docker push aminedridia/tp-foyer:5.0.0
+                    '''
+                }
             }
         }
 
-        stage('Run Docker Compose') {
+        stage('Docker Compose Down') {
             steps {
-                script {
-                    sh '''
-                        sudo docker-compose down 
-                        sudo docker-compose up -d
-                    '''
-                }
+                sh 'sudo docker-compose down'
+            }
+        }
+
+        stage('Docker Compose Up') {
+            steps {
+                sh 'sudo docker-compose up -d'
+            }
+        }
+
+        stage('Prometheus') {
+            steps {
+                sh 'docker start prometheus'
+            }
+        }
+
+        stage('Grafana') {
+            steps {
+                sh 'docker start grafana'
+            }
+        }
+
+        stage('Cleanup Old Docker Images') {
+            steps {
+                sh 'docker image prune -f'
             }
         }
     }
