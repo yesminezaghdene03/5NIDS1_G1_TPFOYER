@@ -46,6 +46,29 @@ pipeline {
                 }
             }
         }*/
+        // Ajouter les étapes OWASP Dependency-Check après SonarQube
+        stage('OWASP Dependency-Check') {
+            steps {
+                script {
+                    dependencyCheck additionalArguments: '--scan .', odcInstallation: 'DP-check'
+                }
+            }
+        }
+        
+        stage('Archive Dependency-Check Report') {
+            steps {
+                script {
+                    archiveArtifacts artifacts: 'dependency-check-report.xml', allowEmptyArchive: true
+                }
+            }
+        }
+        
+        stage('Publish Dependency-Check Results') {
+            steps {
+                script {
+                    dependencyCheckPublisher pattern: 'dependency-check-report.xml'
+                }
+            }
         stage ('Nexus') {
             steps {
                 script {
