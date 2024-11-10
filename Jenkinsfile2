@@ -148,15 +148,7 @@ pipeline {
                 }
             }
         }
-        stage('Cleanup Old Docker Images') {
-            steps {
-                script {
-                    // Supprime les images inutilisées
-                    sh 'docker image prune -f'
-                }
-            }
-        }
-
+    
     }
     post {
             always {
