@@ -69,8 +69,8 @@ pipeline {
                         // Se connecter à Docker Hub avec les credentials Jenkins
                         sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD'
 
-                        // Pousser l'image dans Docker Hub
-                        sh "docker push ${DOCKER_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
+                        // Pousser l'image dans Docker Hub avec le bon nom d'utilisateur
+                        sh "docker push yesmin1/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
                     }
                 }
             }
