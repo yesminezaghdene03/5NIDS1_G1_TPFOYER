@@ -10,5 +10,9 @@ COPY ./target/tp-foyer-5.0.0.jar app.jar
 # Exposer le port sur lequel l'application écoute
 EXPOSE 8089
 
+# Ajouter un HEALTHCHECK pour vérifier l'état de l'application
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+  CMD curl -f http://localhost:8089/ || exit 1
+
 # Démarrer l'application avec la commande java
 ENTRYPOINT ["java", "-jar", "app.jar"]

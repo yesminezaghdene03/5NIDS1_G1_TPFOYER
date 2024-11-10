@@ -52,7 +52,6 @@ pipeline {
         stage('Docker Build') {
             steps {
                 script {
-                    // Construire l'image Docker avec le fichier Dockerfile
                     sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
                 }
             }
@@ -61,12 +60,8 @@ pipeline {
         stage('Docker Push') {
             steps {
                 script {
-                    // Utiliser les credentials Docker créés
                     withCredentials([usernamePassword(credentialsId: 'docker-credentials-id', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        // Se connecter au registre Docker
                         sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
-
-                        // Pousser l'image Docker vers le registre
                         sh "docker push ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
                     }
                 }
@@ -76,75 +71,60 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    // Démarrer les services via docker-compose
                     sh "docker-compose up -d"
-                    // Vérification que les conteneurs sont bien démarrés
                     sh "docker-compose ps"
                 }
             }
         }
 
-        stage('Docker Bench Security Check') {
+        stage('Health Check') {
             steps {
                 script {
-                    // Exécuter Docker Bench pour analyser la sécurité du conteneur
-                    sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock --security-opt seccomp=unconfined --name docker-bench -v $PWD:/tmp docker/docker-bench-security > docker-bench-report.txt'
+                    echo "Vérification de l'état de santé du conteneur"
+                    def containerID = sh(script: "docker ps -q --filter 'ancestor=${DOCKER_IMAGE_NAME}:${DOCKER_TAG}'", returnStdout: true).trim()
+                    if (containerID) {
+                        def healthStatus = sh(script: "docker inspect --format='{{.State.Health.Status}}' ${containerID}", returnStdout: true).trim()
+                        if (healthStatus != 'healthy') {
+                            error("Le conteneur est en état '${healthStatus}'. Arrêt du pipeline.")
+                        } else {
+                            echo "Le conteneur est en bonne santé et prêt."
+                        }
+                    } else {
+                        error("Conteneur non trouvé.")
+                    }
                 }
-            }
-        }
-
-        stage('Archive Report') {
-            steps {
-                archiveArtifacts artifacts: 'docker-bench-report.txt', allowEmptyArchive: true
-            }
-        }
-
-        stage('View Report') {
-            steps {
-                sh "cat docker-bench-report.txt"
             }
         }
 
         stage('Nmap Open Port Verification') {
             steps {
                 script {
-                    // Attendre 5 minutes pour donner le temps au conteneur de démarrer
-                    echo "Attente de 5 minutes pour le démarrage des conteneurs"
-                    sleep(time: 5, unit: 'MINUTES')
+                    echo "Attente pour le démarrage complet des conteneurs"
+                    def containerStatus, containerIP, allowedPort = 8089
 
-                    // Vérifier si le conteneur est bien en cours d'exécution
-                    def containerStatus = sh(script: "docker-compose ps -q app", returnStdout: true).trim()
-                    if (!containerStatus) {
-                        error("Le conteneur app n'a pas démarré correctement.")
+                    retry(5) { // Tenter plusieurs fois pour récupérer l'IP
+                        sleep(time: 1, unit: 'MINUTES')
+                        containerStatus = sh(script: "docker-compose ps -q app", returnStdout: true).trim()
+                        if (!containerStatus) {
+                            error("Le conteneur app n'a pas démarré correctement.")
+                        }
+                        containerIP = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${containerStatus}", returnStdout: true).trim()
+                        if (!containerIP) {
+                            error("Échec de la résolution de l'adresse IP du conteneur.")
+                        }
                     }
 
-                    // Obtenir l'adresse IP du conteneur
-                    def containerIP = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${containerStatus}", returnStdout: true).trim()
-
-                    // Si l'adresse IP est vide, gérer l'erreur
-                    if (!containerIP) {
-                        error("Échec de la résolution de l'adresse IP du conteneur.")
-                    }
-
-                    def allowedPort = 8089
-                    // Exécuter Nmap et sauvegarder la sortie dans un fichier
                     def nmapOutput = sh(script: "nmap -p- ${containerIP}", returnStdout: true).trim()
-
-                    // Sortie brute de l'analyse Nmap pour le débogage
                     echo "Raw Nmap scan output:\n${nmapOutput}"
-                    // Trouver les ports ouverts à l'aide de regex
+
                     def openPorts = []
                     def lines = nmapOutput.split('\n')
-                    for (int i = 0; i < lines.size(); i++) {
-                        def line = lines[i].trim()
+                    lines.each { line ->
                         if (line.contains("open")) {
-                            def parts = line.split("\\s+")
-                            if (parts.length > 0) {
-                                def portInfo = parts[0]  // Cela devrait être "8089/tcp"
-                                def portNumber = portInfo.split("/")[0]  // Extraire le numéro de port
-                                echo "Found open port: ${portNumber}"
-                                openPorts.add(portNumber as Integer)
-                            }
+                            def portInfo = line.split("\\s+")[0]
+                            def portNumber = portInfo.split("/")[0]
+                            echo "Found open port: ${portNumber}"
+                            openPorts.add(portNumber as Integer)
                         }
                     }
                     echo "Open ports: ${openPorts.join(', ')}"
@@ -160,18 +140,13 @@ pipeline {
         stage('Cleanup') {
             steps {
                 script {
-                    // Récupérer dynamiquement le nom du réseau Docker Compose
                     def networkName = sh(script: "docker network ls --filter 'driver=bridge' --format '{{.Name}}' | grep '_default'", returnStdout: true).trim()
-
                     if (networkName) {
                         echo "Le réseau Docker Compose est : ${networkName}"
-                        // Supprimer les services et le réseau Docker Compose
                         sh "docker-compose down"
                     } else {
                         echo "Aucun réseau Docker Compose trouvé."
                     }
-
-                    // Nettoyer le système Docker
                     sh 'docker system prune -f'
                 }
             }
@@ -181,7 +156,6 @@ pipeline {
     post {
         always {
             script {
-                // Nettoyage après l'exécution du pipeline
                 def networkName = sh(script: "docker network ls --filter 'driver=bridge' --format '{{.Name}}' | grep '_default'", returnStdout: true).trim()
                 if (networkName) {
                     echo "Le réseau Docker Compose est : ${networkName}"
