@@ -126,57 +126,53 @@ pipeline {
         }
 
         stage('Nmap Open Port Verification') {
-            steps {
-                script {
-                    // Attendre 5 minutes pour donner le temps au conteneur de démarrer
-                    echo "Attente de 5 minutes pour le démarrage des conteneurs"
-                    sleep(time: 5, unit: 'MINUTES')
+                    steps {
+                        script {
+                            sleep(time: 2, unit: 'MINUTES')
+                            // Get container IP address from Docker
+                            def containerIP = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' tp_foyer_app", returnStdout: true).trim()
 
-                    // Vérifier si le conteneur est bien en cours d'exécution
-                    def containerStatus = sh(script: "docker-compose ps -q app", returnStdout: true).trim()
-                    if (!containerStatus) {
-                        error("Le conteneur app n'a pas démarré correctement.")
-                    }
+                            // If the IP is empty, handle the error
+                            if (!containerIP) {
+                                error("Failed to resolve container IP address.")
+                            }
 
-                    // Obtenir l'adresse IP du conteneur
-                    def containerIP = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${containerStatus}", returnStdout: true).trim()
+                            def allowedPort = 8089
+                            // Run nmap and save output to a file
+                            def nmapOutput = sh(script: "nmap -p- ${containerIP}", returnStdout: true).trim()
 
-                    // Si l'adresse IP est vide, gérer l'erreur
-                    if (!containerIP) {
-                        error("Échec de la résolution de l'adresse IP du conteneur.")
-                    }
-
-                    def allowedPort = 8089
-                    // Exécuter Nmap et sauvegarder la sortie dans un fichier
-                    def nmapOutput = sh(script: "nmap -p- ${containerIP}", returnStdout: true).trim()
-
-                    // Sortie brute de l'analyse Nmap pour le débogage
-                    echo "Raw Nmap scan output:\n${nmapOutput}"
-                    // Trouver les ports ouverts à l'aide de regex
-                    def openPorts = []
-                    def lines = nmapOutput.split('\n')
-                    for (int i = 0; i < lines.size(); i++) {
-                        def line = lines[i].trim()
-                        if (line.contains("open")) {
-                            def parts = line.split("\\s+")
-                            if (parts.length > 0) {
-                                def portInfo = parts[0]  // Cela devrait être "8089/tcp"
-                                def portNumber = portInfo.split("/")[0]  // Extraire le numéro de port
-                                echo "Found open port: ${portNumber}"
-                                openPorts.add(portNumber as Integer)
+                            // Output raw Nmap scan for debugging purposes
+                            echo "Raw Nmap scan output:\n${nmapOutput}"
+                            // Find open ports using regex
+                            def openPorts = []
+                            def lines = nmapOutput.split('\n')
+                            for (int i = 0; i < lines.size(); i++) {
+                                def line = lines[i].trim()
+                                if (line.contains("open")) {
+                                    def parts = line.split("\\s+")
+                                    if (parts.length > 0) {
+                                        def portInfo = parts[0]  // This should be "8089/tcp"
+                                        def portNumber = portInfo.split("/")[0]  // Extract the port number
+                                        echo "Found open port: ${portNumber}"
+                                        openPorts.add(portNumber as Integer)
+                                    }
+                                }
+                            }
+                            echo "Open ports: ${openPorts.join(', ')}"
+                            /*if (openPorts.any { it != allowedPort }) {
+                                error("Build failed: Ports other than ${allowedPort} are open.")
+                            } else {
+                                echo "Only port ${allowedPort} is open. Proceeding with the build."
+                            }*/
+                            if (openPorts.size() != 1 || openPorts[0] != allowedPort) {
+                                error("Build failed: Ports other than ${allowedPort} are open.")
+                            } else {
+                                echo "Only port ${allowedPort} is open. Proceeding with the build."
                             }
                         }
                     }
-                    echo "Open ports: ${openPorts.join(', ')}"
-                    if (openPorts.size() != 1 || openPorts[0] != allowedPort) {
-                        error("Build failed: Ports other than ${allowedPort} are open.")
-                    } else {
-                        echo "Only port ${allowedPort} is open. Proceeding with the build."
-                    }
                 }
-            }
-        }
-    }
+
 
     post {
         always {
