@@ -106,8 +106,21 @@ pipeline {
 
         stage('Cleanup') {
             steps {
-                sh 'docker-compose down'
-                sh 'docker system prune -f'
+                script {
+                    // Récupérer dynamiquement le nom du réseau Docker Compose
+                    def networkName = sh(script: "docker network ls --filter 'driver=bridge' --format '{{.Name}}' | grep '_default'", returnStdout: true).trim()
+
+                    if (networkName) {
+                        echo "Le réseau Docker Compose est : ${networkName}"
+                        // Supprimer les services et le réseau Docker Compose
+                        sh "docker-compose down"
+                    } else {
+                        echo "Aucun réseau Docker Compose trouvé."
+                    }
+
+                    // Nettoyer le système Docker
+                    sh 'docker system prune -f'
+                }
             }
         }
 
@@ -164,9 +177,17 @@ pipeline {
 
     post {
         always {
-            // Nettoyage après l'exécution du pipeline
-            sh 'docker-compose down'
-            sh 'docker system prune -f'
+            script {
+                // Nettoyage après l'exécution du pipeline
+                def networkName = sh(script: "docker network ls --filter 'driver=bridge' --format '{{.Name}}' | grep '_default'", returnStdout: true).trim()
+                if (networkName) {
+                    echo "Le réseau Docker Compose est : ${networkName}"
+                    sh "docker-compose down"
+                } else {
+                    echo "Aucun réseau Docker Compose trouvé."
+                }
+                sh 'docker system prune -f'
+            }
         }
     }
 }
