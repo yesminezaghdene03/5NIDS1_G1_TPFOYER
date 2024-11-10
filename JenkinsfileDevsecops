@@ -8,7 +8,7 @@ pipeline {
         DOCKER_TAG = 'latest'
         SONARQUBE_TOKEN = 'sqp_bc225e0c7bd8daa746a774a9dcc9a6e5cd548f0e'
         DOCKER_CREDENTIALS_ID = "docker-credentials-id"
-        DOCKER_IMAGE_NAME = "emnabelkhiria" // Nom de l'image Docker
+        DOCKER_IMAGE_NAME = 'emna0203/emnabelkhiria-5nids1' // Nom de l'image Docker
     }
 
     stages {

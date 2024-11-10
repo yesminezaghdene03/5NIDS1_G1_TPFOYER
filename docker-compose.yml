@@ -1,20 +1,18 @@
-version: '3.8'
-
 services:
   db:
     image: mysql:5.7
+    container_name: tp-foyer-db  # Nom du conteneur pour la base de données
     environment:
       MYSQL_ROOT_PASSWORD: example
       MYSQL_DATABASE: db
     ports:
-      - "3307:3306"  # Port mappé pour MySQL
+      - "3307:3306"
     volumes:
       - db_data:/var/lib/mysql  # Volume pour persister les données de la base de données
-    networks:
-      - app-network  # Réseau personnalisé pour la communication avec l'application
 
-  tp-foyer-app:  # Nom du service ajusté pour correspondre à la commande 'docker inspect' dans la pipeline
-    image: emnabelkhiria:latest  # Image de l'application
+  app:
+    image: emna0203/emnabelkhiria-5nids1:latest  # Image de l'application
+    container_name: tp-foyer-app  # Nom du conteneur pour l'application
     ports:
       - "8089:8089"  # Mappage du port 8089 de l'hôte vers le conteneur
     environment:
@@ -28,10 +26,11 @@ services:
     depends_on:
       - db  # Dépendance à la base de données
     networks:
-      - app-network  # Réseau personnalisé pour la communication avec la base de données
+      - app-network
 
 networks:
-  app-network:  # Définition du réseau personnalisé pour les services
+  app-network:
+    driver: bridge
 
 volumes:
   db_data:  # Volume persistant pour les données MySQL
