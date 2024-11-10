@@ -15,10 +15,10 @@ services:
       - app-network
 
   app:
-    image: emnabelkhiria-5nids1:latest  # Image de l'application
-    container_name: tp-foyer-app  # Nom du conteneur pour l'application
+    build: .  # Assurez-vous qu'il y a un Dockerfile dans le contexte de la construction
+    container_name: tp-foyer-app
     ports:
-      - "8089:8089"  # Mappage du port 8089 de l'hôte vers le conteneur
+      - "8089:8089"
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db?createDatabaseIfNotExist=true
       SPRING_DATASOURCE_USERNAME: root
