@@ -1,29 +1,44 @@
 pipeline {
     agent any
 
+    environment {
+        IMAGE_NAME = 'my-image'
+        DOCKER_REGISTRY = 'docker.io'
+        DOCKER_REPO = 'library' // Remplace par ton propre nom de repo si nécessaire
+    }
+
     stages {
+        stage('Checkout SCM') {
+            steps {
+                checkout scm
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Code pour construire l'image Docker
-                    sh 'docker build -t my-image .'
+                    sh 'docker build -t ${DOCKER_REGISTRY}/${DOCKER_REPO}/${IMAGE_NAME} .'
                 }
             }
         }
-        
+
         stage('Push Docker Image to DockerHub') {
             steps {
                 script {
-                    // Code pour pousser l'image Docker sur DockerHub
-                    sh 'docker push my-image'
+                    // Se connecter à Docker Hub avec des informations d'identification stockées dans Jenkins
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin'
+                    }
+                    // Pousser l'image Docker
+                    sh 'docker push ${DOCKER_REGISTRY}/${DOCKER_REPO}/${IMAGE_NAME}'
                 }
             }
         }
-        
+
         stage('Docker Compose Down') {
             steps {
                 script {
-                    // Code pour arrêter les conteneurs Docker
+                    // Optionnel: Ajoute ici des commandes pour stopper les conteneurs Docker si nécessaire
                     sh 'docker-compose down'
                 }
             }
@@ -32,7 +47,7 @@ pipeline {
         stage('Docker Compose Up') {
             steps {
                 script {
-                    // Code pour démarrer les conteneurs Docker
+                    // Optionnel: Ajoute ici des commandes pour démarrer les conteneurs Docker
                     sh 'docker-compose up -d'
                 }
             }
@@ -41,8 +56,8 @@ pipeline {
         stage('Prometheus') {
             steps {
                 script {
-                    // Code pour l'intégration avec Prometheus
-                    sh 'curl -s -X POST http://prometheus-server:9090'
+                    // Ajoute ici les étapes pour configurer Prometheus
+                    sh 'echo "Configure Prometheus here"'
                 }
             }
         }
@@ -50,8 +65,8 @@ pipeline {
         stage('Grafana') {
             steps {
                 script {
-                    // Code pour l'intégration avec Grafana
-                    sh 'curl -s -X POST http://grafana-server:3000'
+                    // Ajoute ici les étapes pour configurer Grafana
+                    sh 'echo "Configure Grafana here"'
                 }
             }
         }
@@ -59,20 +74,21 @@ pipeline {
         stage('Cleanup Old Docker Images') {
             steps {
                 script {
-                    // Code pour nettoyer les anciennes images Docker
+                    // Optionnel: Nettoyer les images Docker plus anciennes si nécessaire
                     sh 'docker image prune -f'
                 }
             }
         }
-    }
 
-    post {
-        always {
-            emailext (
-                to: 'aminedridia9@gmail.com',
-                subject: "Build Status: ${currentBuild.currentResult}",
-                body: "The build ${currentBuild.fullDisplayName} has finished with status: ${currentBuild.currentResult}"
-            )
+        stage('Declarative: Post Actions') {
+            steps {
+                emailext(
+                    to: 'aminedridia9@gmail.com',
+                    subject: 'Build Completed',
+                    body: 'The Jenkins pipeline has completed successfully.',
+                    attachLog: true
+                )
+            }
         }
     }
 }
