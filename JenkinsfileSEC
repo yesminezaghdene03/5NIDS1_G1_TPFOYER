@@ -7,6 +7,11 @@ pipeline {
                 git branch: 'hadhemiOmrani_5NIDS_G1', url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
             }
         }
+        stage ('Maven Build') {
+            steps {
+                sh 'mvn clean install'
+            }
+        }
 
         stage ('UNIT Testing') {
             steps {
@@ -19,13 +24,7 @@ pipeline {
                 sh 'mvn verify'
             }
         }
-
-        stage ('Maven Build') {
-            steps {
-                sh 'mvn clean install'
-            }
-        }
-
+        
         stage('Code Coverage') {
             steps {
                 jacoco()
