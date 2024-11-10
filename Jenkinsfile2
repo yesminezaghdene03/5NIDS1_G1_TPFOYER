@@ -1,9 +1,11 @@
 pipeline {
     agent any
 
+    // Définir les variables d'environnement
     environment {
         DOCKER_IMAGE_NAME = "omranihadhemi/devsecops"
         DOCKER_TAG = "v1.$BUILD_ID"  // Utilisation de la variable BUILD_ID pour taguer l'image
+        TRIVY_CACHE_DIR = "${env.WORKSPACE}/.trivy-cache"  // Répertoire de cache accessible
     }
 
     stages {
@@ -113,8 +115,8 @@ pipeline {
         stage('Trivy Scan') {
             steps {
                 script {
-                    // Exécution du scan Trivy
-                    sh "trivy image ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} || echo 'Security scan failed. Review required.'"
+                    // Exécution du scan Trivy avec la configuration de cache
+                    sh "trivy image --cache-dir ${TRIVY_CACHE_DIR} ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} || echo 'Security scan failed. Review required.'"
                 }
             }
         }
