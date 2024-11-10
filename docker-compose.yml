@@ -18,7 +18,7 @@ services:
       timeout: 10s
 
   app:
-    image: emnabelkhiria-5nids1:latest  # Utiliser l'image construite par Jenkins
+    image: emna0203/emnabelkhiria-5nids1:latest  # Utiliser l'image depuis Docker Hub
     ports:
       - "8089:8089"  # Mapper le port 8089 de l'hôte au port 8089 du conteneur
     environment:
@@ -30,8 +30,8 @@ services:
       SERVER_PORT: 8089
       SERVER_SERVLET_CONTEXT_PATH: /tpfoyer
     depends_on:
-      db:  # Assurer que le conteneur de la base de données est prêt avant l'application
-        condition: service_healthy  # Utiliser une condition pour vérifier que la base de données est prête
+      db:
+        condition: service_healthy  # Assurer que le conteneur de la base de données est prêt avant l'application
 
 volumes:
   db_data:  # Volume persistant pour les données MySQL
