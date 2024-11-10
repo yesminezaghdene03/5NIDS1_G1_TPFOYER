@@ -1,7 +1,6 @@
 pipeline {
     agent any
 
-    // Définir les variables d'environnement
     environment {
         DOCKER_IMAGE_NAME = "omranihadhemi/devsecops"
         DOCKER_TAG = "v1.$BUILD_ID"  // Utilisation de la variable BUILD_ID pour taguer l'image
@@ -9,6 +8,34 @@ pipeline {
     }
 
     stages {
+        stage('Docker Cleanup') {
+            steps {
+                script {
+                    // Nettoyage des conteneurs inutilisés
+                    sh 'docker container prune -f'
+                    // Nettoyage des images inutilisées
+                    sh 'docker image prune -f'
+                    // Nettoyage des volumes inutilisés
+                    sh 'docker volume prune -f'
+                }
+            }
+        }
+
+        stage('Jenkins Cleanup') {
+            steps {
+                script {
+                    // Nettoyage des anciens builds Jenkins
+                    sh 'rm -rf $JENKINS_HOME/jobs/YOUR_JOB_NAME/builds/*'
+                    // Nettoyage des artefacts anciens
+                    sh 'rm -rf $JENKINS_HOME/jobs/YOUR_JOB_NAME/lastSuccessful/archive/*'
+                    // Nettoyage des fichiers de cache Jenkins
+                    sh 'rm -rf $JENKINS_HOME/cache/*'
+                    // Nettoyage du workspace actuel
+                    sh 'rm -rf $WORKSPACE/*'
+                }
+            }
+        }
+
         stage('Git Checkout') {
             steps {
                 git branch: 'hadhemiOmrani_5NIDS_G1', url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
