@@ -55,7 +55,13 @@ pipeline {
             steps {
                 script {
                     // Attendre que l'application soit accessible sur http://localhost:8089
-                    sh 'curl --retry 30 --retry-delay 10 --silent --head http://localhost:8089'
+                    sh '''
+                    until curl --silent --head --fail http://localhost:8089/tpfoyer; do
+                        echo "En attente de l'application Spring Boot..."
+                        sleep 10
+                    done
+                    echo "Application Spring Boot en ligne!"
+                    '''
                 }
             }
         }
@@ -65,14 +71,11 @@ pipeline {
                 script {
                     sh '''
                     ZAP_DIR=$(pwd)
-                    docker run -v $ZAP_DIR:/zap/wrk:rw -t zaproxy/zap-stable zap-baseline.py -t http://localhost:8089 -d
+                    docker run -v $ZAP_DIR:/zap/wrk:rw -t zaproxy/zap-stable zap-baseline.py -t http://localhost:8089/tpfoyer -d
                     '''
                 }
             }
         }
-
-
-
 
         stage('Docker Push') {
             steps {
