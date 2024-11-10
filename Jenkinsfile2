@@ -68,10 +68,10 @@ pipeline {
                 dependencyCheckPublisher pattern: 'dependency-check-report.xml'
             }
         }
+
         stage ('Nexus') {
             steps {
                 script {
-
                     def readPomVersion = readMavenPom file: 'pom.xml'
                     def version = readPomVersion.version
                     def repository = version.endsWith("SNAPSHOT") ? "tpfoyer-snapshot" : "Tpfoyer-Release"
@@ -94,22 +94,23 @@ pipeline {
                 }
             }
         }
-        stage('Docker Image  Build'){
+
+        stage('Docker Image Build') {
             steps {
                 script {
                     sh 'docker image build -t $JOB_NAME:v1.$BUILD_ID .'
                     sh 'docker image tag $JOB_NAME:v1.$BUILD_ID omranihadhemi/$JOB_NAME:v1.$BUILD_ID'
                     sh 'docker image tag $JOB_NAME:v1.$BUILD_ID omranihadhemi/$JOB_NAME:latest'
-
                 }
             }
         }
+
         // Étape Trivy Scan pour analyser les vulnérabilités
         stage('Trivy Vulnerability Scan') {
             steps {
                 script {
-                    // Assurez-vous d'avoir téléchargé Trivy
-                    sh 'docker run --rm -v $PWD:/workspace aquasec/trivy image --severity HIGH,CRITICAL omranihadhemi/$JOB_NAME:latest > trivy-report.txt'
+                    // Exécution de Trivy pour scanner l'image Docker construite
+                    sh 'docker run --rm -v /var/lib/jenkins/workspace/devsecops:/workspace -v $HOME/.cache/trivy:/root/.cache/ aquasec/trivy image --severity HIGH,CRITICAL omranihadhemi/$JOB_NAME:v1.$BUILD_ID > trivy-report.txt'
                 }
             }
         }
@@ -120,20 +121,17 @@ pipeline {
                 archiveArtifacts artifacts: 'trivy-report.txt', allowEmptyArchive: true
             }
         }
-        stage ('Docker Hub'){
-            steps{
-                script{
+
+        stage ('Docker Hub') {
+            steps {
+                script {
                     withCredentials([string(credentialsId: 'dockerhub_pwd', variable: 'docker_hub_cred')]) {
                         sh 'docker login -u omranihadhemi -p ${docker_hub_cred}'
-                        sh 'docker image push omranihadhemi/$JOB_NAME:v1.$BUILD_ID '
-                        sh 'docker image push omranihadhemi/$JOB_NAME:latest '
-    
-                 }
-
+                        sh 'docker image push omranihadhemi/$JOB_NAME:v1.$BUILD_ID'
+                        sh 'docker image push omranihadhemi/$JOB_NAME:latest'
+                    }
                 }
             }
-
         }
-        
     }
 }
