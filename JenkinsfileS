@@ -66,10 +66,20 @@ pipeline {
                     // Force la mise à jour des données CVE avant l'analyse pour éviter les erreurs de cache
                     sh 'mvn org.owasp:dependency-check-maven:update-only'
 
-                    // Lancement de l'analyse des dépendances avec logs détaillés et gestion d'erreurs
-                    sh '''
-                        mvn -X org.owasp:dependency-check-maven:check -Dformat=HTML -DoutputDirectory=target || echo "Dependency check failed. Review required."
-                    '''
+                    // Lancement de l'analyse des dépendances avec un format HTML sans gestion d'erreurs ni débogage
+                    sh 'mvn org.owasp:dependency-check-maven:check -Dformat=HTML -DoutputDirectory=target'
+                }
+            }
+        }
+
+        // Génération du rapport HTML
+        stage('Generate HTML Report') {
+            steps {
+                script {
+                    // Exemple de génération d'un rapport HTML depuis un fichier JSON
+                    sh 'python3 convert_to_html.py'  // S'assurer que ce script existe et fonctionne
+                    sh 'mkdir -p $WORKSPACE/reports'  // Créer le répertoire des rapports si nécessaire
+                    sh 'mv report.html $WORKSPACE/reports/'  // Déplacer le rapport généré dans le dossier approprié
                 }
             }
         }
@@ -185,8 +195,8 @@ pipeline {
             junit '**/target/surefire-reports/*.xml'
             archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true
 
-            // Ajouter l'archivage du rapport Trivy HTML
-            archiveArtifacts artifacts: 'reports/trivy-report.html', allowEmptyArchive: true
+            // Ajouter l'archivage du rapport HTML généré par Trivy ou tout autre processus
+            archiveArtifacts artifacts: 'reports/*.html', allowEmptyArchive: true  // Archive all HTML reports from the reports folder
         }
         success {
             echo 'Build and deployment successful!'
