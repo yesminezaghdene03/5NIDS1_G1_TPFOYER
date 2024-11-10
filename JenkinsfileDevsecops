@@ -5,16 +5,15 @@ pipeline {
         NEXUS_URL = "http://192.168.50.4:8081/repository/myRepo/"
         NEXUS_CREDENTIAL_ID = "nexusCredential"
         DOCKER_COMPOSE_VERSION = '1.29.2'
-        DOCKER_IMAGE_NAME = 'emna0203/emnabelkhiria-5nids1'
         DOCKER_TAG = 'latest'
         SONARQUBE_TOKEN = 'sqp_bc225e0c7bd8daa746a774a9dcc9a6e5cd548f0e'
-        DOCKER_CREDENTIALS_ID = "docker-credentials-id" /* Assurez-vous que vous avez configuré le bon ID de credential Docker */
+        DOCKER_CREDENTIALS_ID = "docker-credentials-id"
+        DOCKER_IMAGE_NAME = "emnabelkhiria" // Nom de l'image Docker
     }
 
     stages {
         stage('SCM Checkout') {
             steps {
-                // Cloner le dépôt et se placer sur la branche EmnaBelkhiria_NIDS1_G1
                 git branch: 'EmnaBelkhiria_NIDS1_G1', url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
             }
         }
@@ -54,7 +53,6 @@ pipeline {
         stage('Docker Build') {
             steps {
                 script {
-                    // Build Docker image
                     sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
                 }
             }
@@ -63,10 +61,10 @@ pipeline {
         stage('Docker Push') {
             steps {
                 script {
-                    // Push Docker image to Docker Hub
                     withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS_ID, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                         sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
-                        sh "docker push ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
+                        sh "docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ${DOCKER_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
+                        sh "docker push ${DOCKER_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
                     }
                 }
             }
@@ -75,7 +73,6 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    // Deploy the container using docker-compose
                     sh "docker-compose up -d"
                     sh "docker-compose ps"
                 }
@@ -85,10 +82,7 @@ pipeline {
         stage('Nmap Open Port Verification') {
             steps {
                 script {
-                    // Attente de quelques secondes pour laisser le conteneur démarrer
                     sleep(time: 1, unit: 'MINUTES')
-
-                    // Récupérer l'adresse IP du conteneur
                     def containerIP = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' tp-foyer-app", returnStdout: true).trim()
 
                     if (!containerIP) {
@@ -96,7 +90,6 @@ pipeline {
                     }
 
                     def allowedPort = 8089
-                    // Exécuter nmap pour vérifier les ports ouverts
                     def nmapOutput = sh(script: "nmap -p- ${containerIP}", returnStdout: true).trim()
 
                     echo "Raw Nmap scan output:\n${nmapOutput}"
@@ -128,7 +121,6 @@ pipeline {
         stage('Docker Bench Security Check') {
             steps {
                 script {
-                    // Run Docker Bench Security check
                     sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock --security-opt seccomp=unconfined --name docker-bench -v $PWD:/tmp docker/docker-bench-security > docker-bench-report.txt'
                 }
             }
@@ -156,7 +148,6 @@ pipeline {
 
     post {
         always {
-            // Nettoyage final
             sh 'docker-compose down'
             sh 'docker system prune -f'
         }
