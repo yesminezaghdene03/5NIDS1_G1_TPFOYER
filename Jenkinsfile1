@@ -1,131 +1,162 @@
 pipeline {
     agent any
 
+    tools {
+        jdk 'JAVA_HOME'  // Assurez-vous que 'JAVA_HOME' est défini dans la configuration Jenkins sous "Manage Jenkins" -> "Global Tool Configuration"
+        maven 'M2_Home'  // Assurez-vous que 'M2_Home' est défini dans la configuration Jenkins sous "Manage Jenkins" -> "Global Tool Configuration"
+    }
+
     environment {
-        // Définir les variables d'environnement ici, si nécessaire
+        // Optionnel : Vous pouvez aussi définir des variables d'environnement personnalisées ici si nécessaire
+        MAVEN_HOME = tool name: 'M2_Home', type: 'ToolLocation'
+        JAVA_HOME = tool name: 'JAVA_HOME', type: 'ToolLocation'
     }
 
     stages {
+        // Étape de vérification de la version de Python3
         stage('Verify Python Version') {
             steps {
                 script {
-                    // Vérifier la version de Python3 et son emplacement
+                    // Vérification de la version de Python3
+                    echo 'Vérification de la version de Python3...'
                     sh 'python3 --version'
                     sh 'which python3'
                 }
             }
         }
 
+        // Étape d'installation de Python3 si nécessaire
         stage('Install Python3') {
-            steps {
-                script {
-                    // Installer Python3 si nécessaire
-                    sh 'sudo apt-get update && sudo apt-get install -y python3 python3-pip'
-                }
-            }
-        }
-
-        stage('Pre-commit Security Hooks') {
             steps {
                 script {
                     // Vérifier si Python3 est installé
                     def pythonInstalled = sh(script: 'command -v python3', returnStatus: true)
                     if (pythonInstalled != 0) {
-                        echo 'Python3 n\'est pas installé, veuillez l\'installer avant de continuer.'
-                        error('Python3 n\'est pas installé.')
+                        echo 'Python3 n\'est pas installé, installation en cours...'
+                        // Installer Python3 et pip si nécessaire
+                        sh 'sudo apt-get update && sudo apt-get install -y python3 python3-pip'
+                    } else {
+                        echo 'Python3 est déjà installé.'
                     }
                 }
             }
         }
 
-        stage('Compile Stage') {
+        // Étape de pré-vérification avec des hooks de sécurité avant commit
+        stage('Pre-commit Security Hooks') {
             steps {
-                // Ajouter les étapes de compilation ici, si nécessaire
+                script {
+                    // Vérification si Python3 est toujours accessible
+                    def pythonInstalled = sh(script: 'command -v python3', returnStatus: true)
+                    if (pythonInstalled != 0) {
+                        echo 'Python3 n\'est pas installé, veuillez l\'installer avant de continuer.'
+                        error('Python3 n\'est pas installé.')
+                    }
+                    echo 'Python3 est installé, vous pouvez continuer.'
+                }
             }
         }
 
+        // Étape de compilation avec Maven
+        stage('Compile with Maven') {
+            steps {
+                script {
+                    // Vérification que Maven et Java sont configurés
+                    echo "Using MAVEN_HOME: ${MAVEN_HOME}"
+                    echo "Using JAVA_HOME: ${JAVA_HOME}"
+
+                    // Exécution de Maven pour compiler le projet
+                    sh "${MAVEN_HOME}/bin/mvn clean install -DskipTests"
+                }
+            }
+        }
+
+        // Étape de tests unitaires et d'intégration (JUnit/Mockito)
         stage('JUnit/Mockito Tests') {
             steps {
-                // Ajouter les étapes de tests ici
+                echo 'Running JUnit/Mockito tests...'
+                // Ajouter les commandes pour exécuter les tests ici
             }
         }
 
+        // Étape pour générer le rapport JaCoCo
         stage('JaCoCo Report') {
             steps {
-                // Ajouter les étapes de génération du rapport JaCoCo ici
+                echo 'Generating JaCoCo report...'
+                // Ajouter les commandes pour générer le rapport JaCoCo ici
             }
         }
 
+        // Étape d'analyse SonarQube
         stage('Scan : SonarQube') {
             steps {
-                // Ajouter l'analyse SonarQube ici
+                echo 'Running SonarQube analysis...'
+                // Ajouter les étapes d'analyse SonarQube ici
             }
         }
 
+        // Étape d'analyse de sécurité Nmap
         stage('Security Scan: Nmap') {
             steps {
-                // Ajouter l'analyse de sécurité Nmap ici
+                echo 'Running Nmap security scan...'
+                // Ajouter les étapes d'analyse de sécurité avec Nmap ici
             }
         }
 
+        // Étape d'analyse OWASP Dependency-Check
         stage('Security Scan: OWASP Dependency-Check') {
             steps {
-                // Ajouter l'analyse OWASP Dependency-Check ici
+                echo 'Running OWASP Dependency-Check...'
+                // Ajouter les étapes d'analyse avec OWASP Dependency-Check ici
             }
         }
 
+        // Étape de déploiement vers Nexus
         stage('Deploy to Nexus') {
             steps {
+                echo 'Deploying to Nexus...'
                 // Ajouter les étapes de déploiement vers Nexus ici
             }
         }
 
+        // Étape pour la création de l'image Docker
         stage('Building image') {
             steps {
-                // Ajouter les étapes de création de l'image Docker ici
+                echo 'Building Docker image...'
+                // Ajouter les étapes pour construire l'image Docker ici
             }
         }
 
+        // Étape pour le déploiement de l'image Docker
         stage('Deploy image') {
             steps {
-                // Ajouter les étapes de déploiement de l'image Docker ici
+                echo 'Deploying Docker image...'
+                // Ajouter les étapes pour déployer l'image Docker ici
             }
         }
 
+        // Étape pour démarrer Docker Compose
         stage('Docker compose') {
             steps {
-                // Ajouter les étapes pour Docker Compose ici
+                echo 'Running Docker Compose...'
+                // Ajouter les étapes pour démarrer Docker Compose ici
             }
         }
 
+        // Étape pour démarrer la surveillance des conteneurs avec Prometheus et Grafana
         stage('Start Monitoring Containers') {
             steps {
-                // Ajouter les étapes pour démarrer la surveillance des containers ici
+                echo 'Starting container monitoring...'
+                // Ajouter les étapes pour surveiller les conteneurs avec Prometheus et Grafana ici
             }
         }
 
+        // Étape d'envoi de notifications par email
         stage('Email Notification') {
             steps {
                 script {
-                    // Envoyer un email à l'adresse correcte
+                    // Envoi d'un email à `aminedridia9@gmail.com` pour notifier le statut du build
                     emailext (
                         subject: "Notification de Build Jenkins",
                         body: "Le build a échoué ou réussi. Consultez les logs pour plus de détails.",
-                        to: "aminedridia9@gmail.com"
-                    )
-                }
-            }
-        }
-    }
-
-    post {
-        always {
-            // Action après chaque exécution, comme envoyer une notification d'email
-            emailext (
-                subject: "Notification de Build Jenkins",
-                body: "Le build a échoué ou réussi. Consultez les logs pour plus de détails.",
-                to: "aminedridia9@gmail.com"
-            )
-        }
-    }
-}
+                        to: "aminedridia9@g
