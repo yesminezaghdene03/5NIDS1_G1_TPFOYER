@@ -8,7 +8,7 @@ pipeline {
     }
 
     environment {
-        DOCKER_IMAGE_NAME = 'tp-foyer'
+        DOCKER_IMAGE_NAME = 'tp-foyer/docker'
         DOCKER_TAG = '5.0.0'
         VAULT_ADDR = 'http://127.0.0.1:8200' // Adresse de Vault
         PATH = "$PATH:/home/vagrant/.local/bin:/usr/local/bin" // Ajout du chemin de Trivy
@@ -85,7 +85,17 @@ pipeline {
 
         stage('Trivy Scan') {
             steps {
-                sh "trivy image ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} || echo 'Security scan failed. Review required.'"
+                script {
+                    // Effectuer le scan Trivy et générer un rapport JSON
+                    sh "trivy image --format json --output trivy-report.json ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} || echo 'Security scan failed. Review required.'"
+
+                    // Convertir le rapport JSON en HTML avec un script Python (assurez-vous que le script convert_to_html.py est présent)
+                    sh 'python3 convert_to_html.py'
+
+                    // Déplacer le rapport HTML dans le répertoire des rapports
+                    sh 'mkdir -p $WORKSPACE/reports'  // Créer le répertoire des rapports
+                    sh 'mv trivy-report.html $WORKSPACE/reports/'  // Déplacer le fichier HTML dans ce répertoire
+                }
             }
         }
 
@@ -96,9 +106,9 @@ pipeline {
                     protocol: 'http',
                     nexusUrl: '192.168.50.4:8081', // Ajout du protocole http://
                     groupId: 'tn.esprit',
-                    version: '5.0.0', // Assurez-vous que cette version est correcte pour votre déploiement
+                    version: '5.0.0',
                     repository: 'tp-foyer2',
-                    credentialsId: 'nexus-credentials', // Utilisez l'ID configuré ici
+                    credentialsId: 'nexus-credentials',
                     artifacts: [
                         [artifactId: 'tp-foyer', classifier: '', file: 'target/tp-foyer-5.0.0.jar', type: 'jar']
                     ]
@@ -148,7 +158,6 @@ pipeline {
         stage('Vault Initialization') {
             steps {
                 script {
-                    // Utilisation du token Vault à partir des variables d'environnement Jenkins
                     sh "export VAULT_TOKEN=${env.VAULT_TOKEN}"
                     sh 'vault status' // Vérifie la connexion au Vault
                 }
@@ -164,7 +173,6 @@ pipeline {
                 }
             }
         }
-
     }
 
     post {
@@ -176,6 +184,9 @@ pipeline {
             // Then, attempt to gather JUnit reports
             junit '**/target/surefire-reports/*.xml'
             archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true
+
+            // Ajouter l'archivage du rapport Trivy HTML
+            archiveArtifacts artifacts: 'reports/trivy-report.html', allowEmptyArchive: true
         }
         success {
             echo 'Build and deployment successful!'
