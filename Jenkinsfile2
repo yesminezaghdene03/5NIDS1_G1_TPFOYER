@@ -109,7 +109,7 @@ pipeline {
         stage('Trivy Vulnerability Scan') {
             steps {
                 script {
-                    def result = sh(script: '/usr/bin/trivy image --severity HIGH,CRITICAL --output trivy-report.txt omranihadhemi/devsecops:v1.9', returnStatus: true)
+                    def result = sh(script: "/usr/bin/trivy image --severity HIGH,CRITICAL --output trivy-report.txt ${DOCKER_IMAGE}", returnStatus: true)
                     if (result != 0) {
                         echo "Trivy security scan failed. Review required."
                         currentBuild.result = 'FAILURE'
