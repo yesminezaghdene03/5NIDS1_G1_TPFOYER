@@ -57,7 +57,7 @@ pipeline {
         stage('Docker Build') { // Stage pour construire l'image Docker
             steps {
                 script {
-                     sh "docker build -t yesmin1/tp-foyer:5.0.0 ."
+                    sh "docker build -t yesmin1/tp-foyer:5.0.0 ."
                 }
             }
         }
@@ -103,8 +103,13 @@ pipeline {
 
     post {
         always {
-            junit '*/target/surefire-reports/*.xml'
-            archiveArtifacts artifacts: '*/target/*.jar', allowEmptyArchive: true
+            // Debugging step to check the directory structure
+            sh 'echo "Listing directory contents:"'
+            sh 'ls -R target/surefire-reports/'  // This will list the files in the 'surefire-reports' folder
+
+            // Then, attempt to gather JUnit reports
+            junit '**/target/surefire-reports/*.xml'
+            archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true
         }
         success {
             echo 'Build and deployment successful!'
