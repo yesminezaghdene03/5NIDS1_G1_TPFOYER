@@ -159,4 +159,34 @@ pipeline {
                     emailext (
                         subject: "Notification de Build Jenkins",
                         body: "Le build a échoué ou réussi. Consultez les logs pour plus de détails.",
-                        to: "aminedridia9@g
+                        to: "aminedridia9@gmail.com"
+                    )
+                }
+            }
+        }
+    }
+
+    post {
+        // Actions post-exécution (envoyer un email après l'exécution du pipeline)
+        always {
+            script {
+                // Envoi d'un email à `aminedridia9@gmail.com` pour notifier les résultats du pipeline
+                emailext (
+                    subject: "Notification de Build Jenkins",
+                    body: "Le build a échoué ou réussi. Consultez les logs pour plus de détails.",
+                    to: "aminedridia9@gmail.com"
+                )
+            }
+        }
+
+        success {
+            // Actions spécifiques en cas de succès du pipeline
+            echo 'Le pipeline a réussi avec succès.'
+        }
+
+        failure {
+            // Actions spécifiques en cas d'échec du pipeline
+            echo 'Le pipeline a échoué.'
+        }
+    }
+}
