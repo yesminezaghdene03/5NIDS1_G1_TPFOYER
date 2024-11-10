@@ -13,7 +13,6 @@ pipeline {
         VAULT_ADDR = 'http://127.0.0.1:8200' // Adresse de Vault
         PATH = "$PATH:/home/vagrant/.local/bin:/usr/local/bin" // Ajout du chemin de Trivy
         VAULT_TOKEN = credentials('JENKINS_VAULT_TOKENN') // Utilisation d'un secret Jenkins pour le token Vault
-
     }
 
     stages {
@@ -159,16 +158,21 @@ pipeline {
         stage('Use Vault Secrets') {
             steps {
                 script {
-                    // Utiliser avec les credentials Jenkins pour récupérer le Vault Token
-                    withCredentials([string(credentialsId: 'JENKINS_VAULT_TOKENN', variable: 'VAULT_TOKEN')]) {
-                        // Récupérer le secret de Vault
-                        def secret = sh(script: 'vault kv get -field=value secret/my-secret', returnStdout: true).trim()
-                        echo "Vault secret: ${secret}"  // Utiliser le secret récupéré
-                    }
+                    // Récupérer les identifiants de la base de données
+                    def dbUsername = sh(script: 'vault kv get -field=username secret/db-credentials', returnStdout: true).trim()
+                    def dbPassword = sh(script: 'vault kv get -field=password secret/db-credentials', returnStdout: true).trim()
+                    echo "DB Username: ${dbUsername}"
+
+                    // Récupérer les identifiants Docker Hub
+                    def dockerUsername = sh(script: 'vault kv get -field=username secret/docker-hub', returnStdout: true).trim()
+                    def dockerPassword = sh(script: 'vault kv get -field=password secret/docker-hub', returnStdout: true).trim()
+                    echo "Docker Username: ${dockerUsername}"
+
+                    // Utiliser les identifiants Docker Hub pour se connecter
+                    sh "docker login -u ${dockerUsername} -p ${dockerPassword}"
                 }
             }
         }
-
     }
 
     post {
