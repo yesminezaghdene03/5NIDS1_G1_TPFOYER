@@ -66,21 +66,21 @@ pipeline {
             steps {
                 script {
                     echo "Vérification de l'état de santé du conteneur"
-                    sh 'sleep 10' // Temps d'attente pour permettre le lancement du conteneur
+                    sh 'sleep 20' // Temps d'attente pour permettre le lancement du conteneur
                     try {
                         def containerID = sh(script: "docker ps -q --filter 'ancestor=${DOCKER_IMAGE_NAME}:${DOCKER_TAG}'", returnStdout: true).trim()
                         if (containerID) {
                             def hasHealthCheck = sh(script: "docker inspect --format='{{.State.Health}}' ${containerID}", returnStdout: true).trim()
                             if (hasHealthCheck != "null") {
                                 // Intégration de retry ici
-                                retry(5) {
+                                retry(9) { // Attendre jusqu'à 15 minutes (9 retries de 1 minute)
                                     def healthStatus = sh(script: "docker inspect --format='{{.State.Health.Status}}' ${containerID}", returnStdout: true).trim()
                                     if (healthStatus == 'healthy') {
                                         echo "Le conteneur est en bonne santé."
                                         return // Sortir du retry si le conteneur est sain
                                     } else {
                                         echo "Le conteneur n'est pas encore en bonne santé, attente..."
-                                        sleep(10)  // Attendre avant de vérifier à nouveau
+                                        sleep(20)  // Attendre avant de vérifier à nouveau
                                     }
                                 }
                             } else {
@@ -104,7 +104,7 @@ pipeline {
                     def allowedPort = 8089
 
                     retry(5) { // Tenter plusieurs fois pour récupérer l'IP
-                        sleep(time: 1, unit: 'MINUTES')
+                        sleep(time: 3, unit: 'MINUTES')
                         containerStatus = sh(script: "docker-compose ps -q app", returnStdout: true).trim()
                         if (!containerStatus) {
                             error("Le conteneur app n'a pas démarré correctement.")
