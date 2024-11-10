@@ -28,7 +28,7 @@ services:
 
   zap:
     image: zaproxy/zap-stable
-    container_name: zap-${CI_COMMIT_REF_NAME}  # Utilisez un nom dynamique pour éviter les conflits
+    container_name: zap-${CI_COMMIT_REF_NAME}  # Nom dynamique pour éviter les conflits
     ports:
       - "8090:8090"
     entrypoint: ["zap.sh", "-daemon", "-port", "8090", "-config", "api.disablekey=true"]
@@ -36,6 +36,9 @@ services:
       - ./zap/wrk:/zap/wrk:rw
     depends_on:
       - app
+    environment:
+      # Définir l'URL cible de l'application à scanner
+      TARGET_URL: http://app:8089/tpfoyer  # URL de l'application pour ZAP
 
 volumes:
   db_data:
