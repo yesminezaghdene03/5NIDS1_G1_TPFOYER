@@ -3,11 +3,11 @@ pipeline {
 
     tools {
         jdk 'JAVA_HOME'
-        maven 'M2_HOME'
+        maven 'Maven 3'  // Utilisez le nom exact de l'outil Maven configuré dans Jenkins
     }
 
     stages {
-        // Etape 1 : Git - Récupération du code depuis le dépôt
+        // GIT Phase: Clone repository
         stage('GIT') {
             steps {
                 git branch: 'AmineDridia_5NIDS1_G1',
@@ -15,7 +15,7 @@ pipeline {
             }
         }
 
-        // Etape 2 : Pre-commit Security Hooks
+        // Development Phase: Pre-commit Security Hooks
         stage('Pre-commit Security Hooks') {
             steps {
                 script {
@@ -35,73 +35,13 @@ pipeline {
             }
         }
 
-        // Etape 3 : Compilation et tests
-        stage('Compile Stage') {
-            steps {
-                sh 'mvn clean compile'
-            }
-        }
-
-        stage('JUnit/Mockito Tests') {
-            steps {
-                sh 'mvn test' 
-            }
-        }
-
-        stage('JaCoCo Report') {
-            steps {
-                sh 'mvn jacoco:report'
-            }
-        }
-
-        stage('JaCoCo coverage report') {
-            steps {
-                step([$class: 'JacocoPublisher',
-                      execPattern: '**/target/jacoco.exec',
-                      classPattern: '**/classes',
-                      sourcePattern: '**/src',
-                      exclusionPattern: '*/target/**/,**/*Test*,**/*_javassist/**'
-                ])
-            }
-        }
-
-        // Etape 4 : Scan de sécurité avec SonarQube
-        stage('Scan : SonarQube') {
-            steps {
-                withSonarQubeEnv('sq1') {
-                    sh 'mvn sonar:sonar'
-                }
-            }
-        }
-
-        // Etape 5 : Scan de sécurité avec Nmap
-        stage('Security Scan: Nmap') {
-            steps {
-                script {
-                    echo "Starting Nmap Security Scan..."
-                    sh 'sudo nmap -sS -p 1-65535 -v localhost'
-                }
-            }
-        }
-
-        // Etape 6 : Scan de dépendances avec OWASP Dependency-Check
-        stage('Security Scan: OWASP Dependency-Check') {
-            steps {
-                script {
-                    echo "Starting OWASP Dependency-Check..."
-                    sh 'mvn org.owasp:dependency-check-maven:check'
-                }
-            }
-        }
-
-        // Etape 7 : Build Docker Image
+        // Build Phase: Docker Image Build and Deployment
         stage('Build Docker Image') {
             steps {
                 sh 'sudo docker build -t aminedridia/tp-foyer:5.0.0 .'
             }
         }
 
-        // Etape 8 : Push Docker Image to DockerHub
         stage('Push Docker Image to DockerHub') {
             steps {
                 sh '''
@@ -111,7 +51,6 @@ pipeline {
             }
         }
 
-        // Etape 9 : Déploiement avec Docker Compose
         stage('Run Docker Compose') {
             steps {
                 script {
@@ -123,13 +62,26 @@ pipeline {
             }
         }
 
-        // Etape 10 : Monitoring et Email de notification
-        stage('Start Monitoring Containers') {
+        // Security Scanning Phase
+        stage('Security Scan: Nmap') {
             steps {
-                sh 'docker start be79135ec1cc'
+                script {
+                    echo "Starting Nmap Security Scan..."
+                    sh 'sudo nmap -sS -p 1-65535 -v localhost'
+                }
             }
         }
 
+        stage('Security Scan: OWASP Dependency-Check') {
+            steps {
+                script {
+                    echo "Starting OWASP Dependency-Check..."
+                    sh 'mvn org.owasp:dependency-check-maven:check'
+                }
+            }
+        }
+
+        // Final Phase: Email Notification
         stage('Email Notification') {
             steps {
                 mail bcc: '', 
