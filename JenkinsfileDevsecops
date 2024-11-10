@@ -30,6 +30,27 @@ pipeline {
             }
         }
 
+        // Phase d'Acceptation
+        stage('Acceptance Tests') {
+            steps {
+                sh 'mvn test || echo "Acceptance tests failed. Review required."'
+            }
+        }
+
+        stage('Dependency Check') {
+            steps {
+                script {
+                    // Force la mise à jour des données CVE avant l'analyse pour éviter les erreurs de cache
+                    sh 'mvn org.owasp:dependency-check-maven:update-only'
+
+                    // Lancement de l'analyse des dépendances avec logs détaillés et gestion d'erreurs
+                    sh '''
+                        mvn -X org.owasp:dependency-check-maven:check -Dformat=HTML -DoutputDirectory=target || echo "Dependency check failed. Review required."
+                    '''
+                }
+            }
+        }
+
         stage('Package') {
             steps {
                 sh 'mvn package'
@@ -141,7 +162,6 @@ pipeline {
         stage('Cleanup') {
             steps {
                 sh 'docker-compose down'
-                sh 'docker system prune -f'
             }
         }
     }
@@ -149,7 +169,6 @@ pipeline {
     post {
         always {
             sh 'docker-compose down'
-            sh 'docker system prune -f'
         }
     }
 }

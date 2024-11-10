@@ -33,7 +33,7 @@
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.33</version> <!-- Version ajoutée ici -->
+            <version>8.0.33</version>
         </dependency>
 
         <!-- Lombok -->
@@ -80,7 +80,6 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
     <build>
@@ -110,6 +109,24 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+
+            <!-- OWASP Dependency-Check plugin for security analysis -->
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <version>9.0.8</version> <!-- Utilisez la dernière version disponible -->
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <outputDirectory>${project.build.directory}/dependency-check-report</outputDirectory>
+                    <format>HTML</format>
+                </configuration>
             </plugin>
         </plugins>
     </build>
