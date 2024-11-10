@@ -51,29 +51,23 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                script {
-                    sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
-                }
+                sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
             }
         }
 
         stage('Docker Push') {
             steps {
-                script {
-                    withCredentials([usernamePassword(credentialsId: 'docker-credentials-id', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
-                        sh "docker push ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
-                    }
+                withCredentials([usernamePassword(credentialsId: 'docker-credentials-id', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
+                    sh "docker push ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
                 }
             }
         }
 
         stage('Deploy') {
             steps {
-                script {
-                    sh "docker-compose up -d"
-                    sh "docker-compose ps"
-                }
+                sh "docker-compose up -d"
+                sh "docker-compose ps"
             }
         }
 
@@ -81,16 +75,26 @@ pipeline {
             steps {
                 script {
                     echo "Vérification de l'état de santé du conteneur"
-                    def containerID = sh(script: "docker ps -q --filter 'ancestor=${DOCKER_IMAGE_NAME}:${DOCKER_TAG}'", returnStdout: true).trim()
-                    if (containerID) {
-                        def healthStatus = sh(script: "docker inspect --format='{{.State.Health.Status}}' ${containerID}", returnStdout: true).trim()
-                        if (healthStatus != 'healthy') {
-                            error("Le conteneur est en état '${healthStatus}'. Arrêt du pipeline.")
+                    sh 'sleep 10' // Temps d'attente pour permettre le lancement du conteneur
+                    try {
+                        def containerID = sh(script: "docker ps -q --filter 'ancestor=${DOCKER_IMAGE_NAME}:${DOCKER_TAG}'", returnStdout: true).trim()
+                        if (containerID) {
+                            def hasHealthCheck = sh(script: "docker inspect --format='{{.State.Health}}' ${containerID}", returnStdout: true).trim()
+                            if (hasHealthCheck != "null") {
+                                def healthStatus = sh(script: "docker inspect --format='{{.State.Health.Status}}' ${containerID}", returnStdout: true).trim()
+                                if (healthStatus != 'healthy') {
+                                    error("Le conteneur est en état '${healthStatus}'. Arrêt du pipeline.")
+                                } else {
+                                    echo "Le conteneur est en bonne santé et prêt."
+                                }
+                            } else {
+                                echo "Le conteneur n'a pas de configuration de vérification de l'état de santé."
+                            }
                         } else {
-                            echo "Le conteneur est en bonne santé et prêt."
+                            error("Conteneur introuvable pour l'image ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}.")
                         }
-                    } else {
-                        error("Conteneur non trouvé.")
+                    } catch (Exception e) {
+                        error("Erreur lors de la vérification de l'état de santé du conteneur : ${e.getMessage()}")
                     }
                 }
             }
