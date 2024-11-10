@@ -7,20 +7,16 @@ services:
       MYSQL_ROOT_PASSWORD: example
       MYSQL_DATABASE: db
     ports:
-      - "3307:3306"  # Le port hôte 3307 est mappé au port 3306 du conteneur
+      - "3307:3306"  # Port mappé pour MySQL
     volumes:
-      - db_data:/var/lib/mysql  # Volume persistant pour les données MySQL
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "--host=localhost", "--user=root", "--password=example"]
-      interval: 30s
-      retries: 5
-      start_period: 30s
-      timeout: 10s
+      - db_data:/var/lib/mysql  # Volume pour persister les données de la base de données
+    networks:
+      - app-network  # Réseau personnalisé pour la communication avec l'application
 
-  app:
-    image: emna0203/emnabelkhiria-5nids1:latest  # Utiliser l'image depuis Docker Hub
+  tp_foyer_app:  # Nom du service ajusté pour correspondre à la commande 'docker inspect' dans la pipeline
+    image: emnabelkhiria-5nids1:latest  # Image de l'application
     ports:
-      - "8089:8089"  # Mapper le port 8089 de l'hôte au port 8089 du conteneur
+      - "8089:8089"  # Mappage du port 8089 de l'hôte vers le conteneur
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/db?createDatabaseIfNotExist=true
       SPRING_DATASOURCE_USERNAME: root
@@ -30,8 +26,12 @@ services:
       SERVER_PORT: 8089
       SERVER_SERVLET_CONTEXT_PATH: /tpfoyer
     depends_on:
-      db:
-        condition: service_healthy  # Assurer que le conteneur de la base de données est prêt avant l'application
+      - db  # Dépendance à la base de données
+    networks:
+      - app-network  # Réseau personnalisé pour la communication avec la base de données
+
+networks:
+  app-network:  # Définition du réseau personnalisé pour les services
 
 volumes:
   db_data:  # Volume persistant pour les données MySQL
