@@ -62,6 +62,20 @@ pipeline {
             }
         }
 
+        stage('Docker Push') { // Stage pour pousser l'image Docker dans Docker Hub
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'Docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    script {
+                        // Se connecter à Docker Hub avec les credentials Jenkins
+                        sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD'
+
+                        // Pousser l'image dans Docker Hub
+                        sh "docker push ${DOCKER_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
+                    }
+                }
+            }
+        }
+
         stage('Deploy') { // Stage pour déployer avec Docker Compose
             steps {
                 script {
