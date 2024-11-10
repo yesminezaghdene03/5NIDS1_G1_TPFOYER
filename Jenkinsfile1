@@ -3,19 +3,18 @@ pipeline {
 
     tools {
         jdk 'JAVA_HOME'
-        maven 'Maven 3'  // Utilisez le nom exact de l'outil Maven configuré dans Jenkins
+        maven 'M2_HOME'
     }
 
     stages {
-        // GIT Phase: Clone repository
+        // Development Phase: Pre-commit Security Hooks
         stage('GIT') {
             steps {
-                git branch: 'AmineDridia_5NIDS1_G1',
+                git branch: 'AmineDridia_5NIDS1_G1', 
                     url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER'
             }
         }
 
-        // Development Phase: Pre-commit Security Hooks
         stage('Pre-commit Security Hooks') {
             steps {
                 script {
@@ -35,34 +34,45 @@ pipeline {
             }
         }
 
-        // Build Phase: Docker Image Build and Deployment
-        stage('Build Docker Image') {
+        // Commit Phase: JUnit/Mockito Security Unit Tests
+        stage('Compile Stage') {
             steps {
-                sh 'sudo docker build -t aminedridia/tp-foyer:5.0.0 .'
+                sh 'mvn clean compile'
             }
         }
 
-        stage('Push Docker Image to DockerHub') {
+        stage('JUnit/Mockito Tests') {
             steps {
-                sh '''
-                    sudo docker login -u aminedridia -p adminamine 
-                    sudo docker push aminedridia/tp-foyer:5.0.0
-                '''
+                sh 'mvn test' 
             }
         }
 
-        stage('Run Docker Compose') {
+        stage('JaCoCo Report') {
             steps {
-                script {
-                    sh '''
-                        sudo docker-compose down 
-                        sudo docker-compose up -d
-                    '''
+                sh 'mvn jacoco:report'
+            }
+        }
+
+        stage('JaCoCo coverage report') {
+            steps {
+                step([$class: 'JacocoPublisher',
+                      execPattern: '**/target/jacoco.exec',
+                      classPattern: '**/classes',
+                      sourcePattern: '**/src',
+                      exclusionPattern: '*/target/**/,**/*Test*,**/*_javassist/**'
+                ])
+            }
+        }
+
+        // Acceptance Phase: Security Scanning Tools
+        stage('Scan : SonarQube') {
+            steps {
+                withSonarQubeEnv('sq1') {
+                    sh 'mvn sonar:sonar'
                 }
             }
         }
 
-        // Security Scanning Phase
         stage('Security Scan: Nmap') {
             steps {
                 script {
@@ -81,7 +91,41 @@ pipeline {
             }
         }
 
-        // Final Phase: Email Notification
+        // Production Phase: Deployment and Monitoring
+        stage('Deploy to Nexus') {
+            steps {
+                sh 'mvn deploy -DskipTests -DaltDeploymentRepository=deploymentRepo::default::http://192.168.33.10:8081/repository/maven-releases/'
+            }
+        }
+
+        stage('Building image') {
+            steps {
+                sh 'docker build -t aminedridia/tp-foyer:5.0.0 .'
+            }
+        }
+
+        stage('Deploy image') {
+            steps {
+                withCredentials([string(credentialsId: 'dockerhub-jenkins-token', variable: 'dockerhub_token')]) {
+                    sh "docker login -u aminedridia -p ${dockerhub_token}"
+                    sh 'docker push aminedridia/tp-foyer:5.0.0'
+                }
+            }
+        }
+
+        stage('Docker compose') {
+            steps {
+                sh 'docker compose up -d'
+            }
+        }
+
+        // Operations Phase: Container and Pipeline Monitoring
+        stage('Start Monitoring Containers') {
+            steps {
+                sh 'docker start be79135ec1cc'
+            }
+        }
+
         stage('Email Notification') {
             steps {
                 mail bcc: '', 
