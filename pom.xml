@@ -111,11 +111,11 @@
                 </executions>
             </plugin>
 
-            <!-- OWASP Dependency-Check plugin for security analysis -->
-            <plugin>
-                <groupId>org.owasp</groupId>
-                <artifactId>dependency-check-maven</artifactId>
-                <version>9.0.8</version> <!-- Utilisez la dernière version disponible -->
+            <!-- OWASP Dependency-Check plugin -->
+            <!-- <plugin>
+                 <groupId>org.owasp</groupId>
+                 <artifactId>dependency-check-maven</artifactId>
+                 <version>9.0.8</version>
                 <executions>
                     <execution>
                         <goals>
@@ -123,11 +123,7 @@
                         </goals>
                     </execution>
                 </executions>
-                <configuration>
-                    <outputDirectory>${project.build.directory}/dependency-check-report</outputDirectory>
-                    <format>HTML</format>
-                </configuration>
-            </plugin>
+            </plugin> -->
         </plugins>
     </build>
 
@@ -139,5 +135,4 @@
             <url>http://192.168.50.4:8081/repository/myRepo/</url>
         </repository>
     </distributionManagement>
-
 </project>

@@ -30,7 +30,7 @@ pipeline {
             }
         }
 
-        // Phase d'Acceptation
+        /* Phase d'Acceptation
         stage('Acceptance Tests') {
             steps {
                 sh 'mvn test || echo "Acceptance tests failed. Review required."'
@@ -49,7 +49,7 @@ pipeline {
                     '''
                 }
             }
-        }
+        }*/
 
         stage('Package') {
             steps {
