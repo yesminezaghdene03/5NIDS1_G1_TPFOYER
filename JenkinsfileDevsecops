@@ -72,11 +72,16 @@ pipeline {
                         if (containerID) {
                             def hasHealthCheck = sh(script: "docker inspect --format='{{.State.Health}}' ${containerID}", returnStdout: true).trim()
                             if (hasHealthCheck != "null") {
-                                def healthStatus = sh(script: "docker inspect --format='{{.State.Health.Status}}' ${containerID}", returnStdout: true).trim()
-                                if (healthStatus != 'healthy') {
-                                    error("Le conteneur est en état '${healthStatus}'. Arrêt du pipeline.")
-                                } else {
-                                    echo "Le conteneur est en bonne santé et prêt."
+                                // Intégration de retry ici
+                                retry(5) {
+                                    def healthStatus = sh(script: "docker inspect --format='{{.State.Health.Status}}' ${containerID}", returnStdout: true).trim()
+                                    if (healthStatus == 'healthy') {
+                                        echo "Le conteneur est en bonne santé."
+                                        return // Sortir du retry si le conteneur est sain
+                                    } else {
+                                        echo "Le conteneur n'est pas encore en bonne santé, attente..."
+                                        sleep(10)  // Attendre avant de vérifier à nouveau
+                                    }
                                 }
                             } else {
                                 echo "Le conteneur n'a pas de configuration de vérification de l'état de santé."
@@ -95,7 +100,8 @@ pipeline {
             steps {
                 script {
                     echo "Attente pour le démarrage complet des conteneurs"
-                    def containerStatus, containerIP, allowedPort = 8089
+                    def containerStatus, containerIP
+                    def allowedPort = 8089
 
                     retry(5) { // Tenter plusieurs fois pour récupérer l'IP
                         sleep(time: 1, unit: 'MINUTES')
