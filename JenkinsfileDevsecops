@@ -30,10 +30,9 @@ pipeline {
         }
 
         stage('Run Application') {
-                steps {
-                    // Démarrer l'application Spring Boot
-                    sh 'mvn spring-boot:run'
-                }
+            steps {
+                // Démarrer l'application Spring Boot
+                sh 'mvn spring-boot:run'
             }
         }
 
@@ -54,6 +53,7 @@ pipeline {
         stage('Docker Build') {
             steps {
                 script {
+                    // Construire l'image Docker
                     sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
                 }
             }
@@ -62,7 +62,7 @@ pipeline {
         stage('Wait for Application') {
             steps {
                 script {
-                    // Attendre que l'application soit accessible sur http://localhost:8089
+                    // Attendre que l'application soit accessible sur http://localhost:8089/tpfoyer
                     sh '''
                     until curl --silent --head --fail http://localhost:8089/tpfoyer; do
                         echo "En attente de l'application Spring Boot..."
@@ -77,10 +77,9 @@ pipeline {
         stage('ZAP Baseline Scan') {
             steps {
                 script {
-                    sh '''
+                    // Lancer un scan de sécurité ZAP
                     ZAP_DIR=$(pwd)
-                    docker run -v $ZAP_DIR:/zap/wrk:rw -t zaproxy/zap-stable zap-baseline.py -t http://localhost:8089/tpfoyer -d
-                    '''
+                    sh "docker run -v $ZAP_DIR:/zap/wrk:rw -t zaproxy/zap-stable zap-baseline.py -t http://localhost:8089/tpfoyer -d"
                 }
             }
         }
@@ -88,6 +87,7 @@ pipeline {
         stage('Docker Push') {
             steps {
                 script {
+                    // Pousser l'image Docker vers le repository
                     sh "docker push ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
                 }
             }
@@ -96,6 +96,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
+                    // Déployer avec Docker Compose
                     sh "docker-compose up -d"
                     sh "docker-compose ps"
                 }
@@ -105,6 +106,7 @@ pipeline {
         stage('Docker Bench Security Check') {
             steps {
                 script {
+                    // Exécuter une analyse de sécurité avec Docker Bench
                     sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock --security-opt seccomp=unconfined --name docker-bench -v $PWD:/tmp docker/docker-bench-security > docker-bench-report.txt'
                 }
             }
@@ -112,18 +114,21 @@ pipeline {
 
         stage('Archive Report') {
             steps {
+                // Archiver le rapport Docker Bench
                 archiveArtifacts artifacts: 'docker-bench-report.txt', allowEmptyArchive: true
             }
         }
 
         stage('View Report') {
             steps {
+                // Afficher le contenu du rapport Docker Bench
                 sh "cat docker-bench-report.txt"
             }
         }
 
         stage('Cleanup') {
             steps {
+                // Nettoyer les ressources Docker
                 sh 'docker-compose down'
                 sh 'docker system prune -f'
             }
@@ -132,6 +137,7 @@ pipeline {
 
     post {
         always {
+            // Nettoyage des ressources Docker, même si le pipeline échoue
             sh 'docker-compose down'
             sh 'docker system prune -f'
         }
