@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        DOCKER_HUB_CREDENTIALS = 'dockerhub-credentials'  // Utiliser les identifiants Jenkins pour DockerHub
-    }
-
     stages {
         stage('GIT') {
             steps {
@@ -23,21 +19,18 @@ pipeline {
 
         stage('Push Docker Image to DockerHub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                    sh '''
-                        sudo docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD} 
-                        sudo docker push aminedridia/tp-foyer:5.0.0
-                    '''
-                }
+                sh '''
+                    sudo docker login -u aminedridia -p adminamine 
+                    sudo docker push aminedridia/tp-foyer:5.0.0
+                '''
             }
         }
 
         stage('Run Docker Compose') {
             steps {
                 script {
-                    // Assurer le nettoyage des containers orphelins et des anciens containers
                     sh '''
-                        sudo docker-compose down --remove-orphans 
+                        sudo docker-compose down 
                         sudo docker-compose up -d
                     '''
                 }
