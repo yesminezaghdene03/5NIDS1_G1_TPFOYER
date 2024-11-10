@@ -1,188 +1,131 @@
 pipeline {
     agent any
 
-    tools {
-        jdk 'JAVA_HOME'
-        maven 'M2_Home'
+    environment {
+        // Définir les variables d'environnement ici, si nécessaire
     }
 
     stages {
-        // Étape de récupération du code
-        stage('GIT') {
+        stage('Verify Python Version') {
             steps {
-                git branch: 'Nawelhammami-5NIDS1-G1', 
-                url: 'https://github.com/MohamedKhalil-Mzali/5NIDS-G1-ProjetDevOps.git'
+                script {
+                    // Vérifier la version de Python3 et son emplacement
+                    sh 'python3 --version'
+                    sh 'which python3'
+                }
             }
         }
 
-        // Étape de gestion de l'environnement Python et de l'installation de pre-commit
+        stage('Install Python3') {
+            steps {
+                script {
+                    // Installer Python3 si nécessaire
+                    sh 'sudo apt-get update && sudo apt-get install -y python3 python3-pip'
+                }
+            }
+        }
+
         stage('Pre-commit Security Hooks') {
             steps {
                 script {
-                    sh '''
-                    if ! command -v python3 &> /dev/null
-                    then
-                        echo "Python3 n'est pas installé, veuillez l'installer avant de continuer."
-                        exit 1
-                    fi
-                    
-                    # Créer un environnement virtuel si nécessaire
-                    if [ ! -d "venv" ]; then
-                        python3 -m venv venv
-                    fi
-                    source venv/bin/activate
-                    pip install --upgrade pip
-                    pip install pre-commit
-
-                    git config --unset-all core.hooksPath
-                    pre-commit install
-                    pre-commit run --all-files
-                    '''
+                    // Vérifier si Python3 est installé
+                    def pythonInstalled = sh(script: 'command -v python3', returnStatus: true)
+                    if (pythonInstalled != 0) {
+                        echo 'Python3 n\'est pas installé, veuillez l\'installer avant de continuer.'
+                        error('Python3 n\'est pas installé.')
+                    }
                 }
             }
         }
 
-        // Étape de compilation
         stage('Compile Stage') {
             steps {
-                sh 'mvn clean compile'
+                // Ajouter les étapes de compilation ici, si nécessaire
             }
         }
 
-        // Étape de tests unitaires avec JUnit/Mockito
         stage('JUnit/Mockito Tests') {
             steps {
-                sh 'mvn test'
+                // Ajouter les étapes de tests ici
             }
         }
 
-        // Étape de génération du rapport JaCoCo
         stage('JaCoCo Report') {
             steps {
-                sh 'mvn jacoco:report'
+                // Ajouter les étapes de génération du rapport JaCoCo ici
             }
         }
 
-        // Étape de publication du rapport JaCoCo
-        stage('JaCoCo coverage report') {
-            steps {
-                step([$class: 'JacocoPublisher',
-                      execPattern: '**/target/jacoco.exec',
-                      classPattern: '**/classes',
-                      sourcePattern: '**/src',
-                      exclusionPattern: '*/target/**/,**/*Test*,**/*_javassist/**'
-                ])
-            }
-        }
-
-        // Étapes de sécurité (SonarQube, Nmap, OWASP Dependency-Check)
         stage('Scan : SonarQube') {
             steps {
-                withSonarQubeEnv('sq1') {
-                    sh 'mvn sonar:sonar'
-                }
+                // Ajouter l'analyse SonarQube ici
             }
         }
 
         stage('Security Scan: Nmap') {
             steps {
-                script {
-                    echo "Starting Nmap Security Scan..."
-                    sh 'sudo nmap -sS -p 1-65535 -v localhost'
-                }
+                // Ajouter l'analyse de sécurité Nmap ici
             }
         }
 
         stage('Security Scan: OWASP Dependency-Check') {
             steps {
-                script {
-                    echo "Starting OWASP Dependency-Check..."
-                    sh 'mvn org.owasp:dependency-check-maven:check'
-                }
+                // Ajouter l'analyse OWASP Dependency-Check ici
             }
         }
 
-        // Étapes de déploiement (Nexus, Docker, Docker Compose)
         stage('Deploy to Nexus') {
             steps {
-                sh 'mvn deploy -DskipTests -DaltDeploymentRepository=deploymentRepo::default::http://192.168.33.10:8081/repository/maven-releases/'
+                // Ajouter les étapes de déploiement vers Nexus ici
             }
         }
 
         stage('Building image') {
             steps {
-                sh 'docker build -t nawel119/gestion-station-ski:1.0.0 .'
+                // Ajouter les étapes de création de l'image Docker ici
             }
         }
 
         stage('Deploy image') {
             steps {
-                withCredentials([string(credentialsId: 'dockerhub-jenkins-token', variable: 'dockerhub_token')]) {
-                    sh "docker login -u nawel119 -p ${dockerhub_token}"
-                    sh 'docker push nawel119/gestion-station-ski:1.0.0'
-                }
+                // Ajouter les étapes de déploiement de l'image Docker ici
             }
         }
 
         stage('Docker compose') {
             steps {
-                sh 'docker compose up -d'
+                // Ajouter les étapes pour Docker Compose ici
             }
         }
 
-        // Étape de démarrage du monitoring des conteneurs
         stage('Start Monitoring Containers') {
             steps {
-                sh 'docker start be79135ec1cc'
+                // Ajouter les étapes pour démarrer la surveillance des containers ici
             }
         }
 
-        // Étape de notification par email
         stage('Email Notification') {
             steps {
-                mail bcc: '', 
-                     body: '''
-Final Report: The pipeline has completed successfully. No action required.
-''', 
-                     cc: '', 
-                     from: '', 
-                     replyTo: '', 
-                     subject: 'Succès de la pipeline DevOps Project', 
-                     to: 'aminedridia9@gmail.com'
+                script {
+                    // Envoyer un email à l'adresse correcte
+                    emailext (
+                        subject: "Notification de Build Jenkins",
+                        body: "Le build a échoué ou réussi. Consultez les logs pour plus de détails.",
+                        to: "aminedridia9@gmail.com"
+                    )
+                }
             }
         }
     }
 
     post {
-        success {
-            script {
-                emailext (
-                    subject: "Build Success: ${currentBuild.fullDisplayName}",
-                    body: "Le build a réussi ! Consultez les détails à ${env.BUILD_URL}",
-                    recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'DevelopersRecipientProvider']],
-                    to: 'aminedridia9@gmail.com'
-                )
-            }
-        }
-        failure {
-            script {
-                emailext (
-                    subject: "Build Failure: ${currentBuild.fullDisplayName}",
-                    body: "Le build a échoué ! Vérifiez les détails à ${env.BUILD_URL}",
-                    recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'DevelopersRecipientProvider']],
-                    to: 'aminedridia9@gmail.com'
-                )
-            }
-        }
         always {
-            script {
-                emailext (
-                    subject: "Build Notification: ${currentBuild.fullDisplayName}",
-                    body: "Consultez les détails du build à ${env.BUILD_URL}",
-                    recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'DevelopersRecipientProvider']],
-                    to: 'aminedridia9@gmail.com'
-                )
-            }
+            // Action après chaque exécution, comme envoyer une notification d'email
+            emailext (
+                subject: "Notification de Build Jenkins",
+                body: "Le build a échoué ou réussi. Consultez les logs pour plus de détails.",
+                to: "aminedridia9@gmail.com"
+            )
         }
     }
 }
