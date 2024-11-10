@@ -12,7 +12,7 @@ pipeline {
         DOCKER_TAG = '5.0.0'
         VAULT_ADDR = 'http://127.0.0.1:8200' // Adresse de Vault
         PATH = "$PATH:/home/vagrant/.local/bin:/usr/local/bin" // Ajout du chemin de Trivy
-        VAULT_TOKEN = credentials('JENKINS_VAULT_TOKEN') // Utilisation d'un secret Jenkins pour le token Vault
+        VAULT_TOKEN = credentials('JENKINS_VAULT_TOKENN') // Utilisation d'un secret Jenkins pour le token Vault
     }
 
     stages {
