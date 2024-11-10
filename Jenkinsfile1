@@ -3,14 +3,14 @@ pipeline {
 
     tools {
         jdk 'JAVA_HOME'
-        maven 'M2_HOME'
+        maven 'M2_Home'  // Correction du nom de l'outil Maven
     }
 
     stages {
         // Development Phase: Pre-commit Security Hooks
         stage('GIT') {
             steps {
-                git branch: 'AmineDridia_5NIDS1_G1', 
+                git branch: 'AmineDridia_5NIDS1_G1',
                     url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER'
             }
         }
@@ -166,11 +166,4 @@ Final Report: The pipeline has completed successfully. No action required.
             script {
                 emailext (
                     subject: "Build Notification: ${currentBuild.fullDisplayName}",
-                    body: "Consultez les détails du build à ${env.BUILD_URL}",
-                    recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'DevelopersRecipientProvider']],
-                    to: 'aminedridia9@gmail.com'
-                )
-            }
-        }
-    }
-}
+                    body: "Consultez les 
