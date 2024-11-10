@@ -72,18 +72,6 @@ pipeline {
             }
         }
 
-        // Génération du rapport HTML
-        stage('Generate HTML Report') {
-            steps {
-                script {
-                    // Exemple de génération d'un rapport HTML depuis un fichier JSON
-                    sh 'python3 convert_to_html.py'  // S'assurer que ce script existe et fonctionne
-                    sh 'mkdir -p $WORKSPACE/reports'  // Créer le répertoire des rapports si nécessaire
-                    sh 'mv report.html $WORKSPACE/reports/'  // Déplacer le rapport généré dans le dossier approprié
-                }
-            }
-        }
-
         // Phase de Production
         stage('Docker Build') {
             steps {
@@ -98,13 +86,6 @@ pipeline {
                 script {
                     // Effectuer le scan Trivy et générer un rapport JSON
                     sh "trivy image --format json --output trivy-report.json ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} || echo 'Security scan failed. Review required.'"
-
-                    // Convertir le rapport JSON en HTML avec un script Python (assurez-vous que le script convert_to_html.py est présent)
-                    sh 'python3 convert_to_html.py'
-
-                    // Déplacer le rapport HTML dans le répertoire des rapports
-                    sh 'mkdir -p $WORKSPACE/reports'  // Créer le répertoire des rapports
-                    sh 'mv trivy-report.html $WORKSPACE/reports/'  // Déplacer le fichier HTML dans ce répertoire
                 }
             }
         }
@@ -195,7 +176,7 @@ pipeline {
             junit '**/target/surefire-reports/*.xml'
             archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true
 
-            // Ajouter l'archivage du rapport HTML généré par Trivy ou tout autre processus
+            // Ajouter l'archivage des rapports HTML générés (Trivy, etc.)
             archiveArtifacts artifacts: 'reports/*.html', allowEmptyArchive: true  // Archive all HTML reports from the reports folder
         }
         success {
