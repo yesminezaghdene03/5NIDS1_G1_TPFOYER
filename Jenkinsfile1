@@ -7,25 +7,33 @@ pipeline {
     }
 
     stages {
-        // Development Phase: Pre-commit Security Hooks
+        // Étape de récupération du code
         stage('GIT') {
             steps {
-                git branch: 'AmineDridia_5NIDS1_G1',
-                    url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER'
+                git branch: 'Nawelhammami-5NIDS1-G1', 
+                url: 'https://github.com/MohamedKhalil-Mzali/5NIDS-G1-ProjetDevOps.git'
             }
         }
 
+        // Étape de gestion de l'environnement Python et de l'installation de pre-commit
         stage('Pre-commit Security Hooks') {
             steps {
                 script {
                     sh '''
-                    if ! command -v pre-commit &> /dev/null
+                    if ! command -v python3 &> /dev/null
                     then
-                        echo "pre-commit n'est pas installé, installation dans un environnement virtuel..."
-                        python3 -m venv venv
-                        . venv/bin/activate
-                        pip install pre-commit
+                        echo "Python3 n'est pas installé, veuillez l'installer avant de continuer."
+                        exit 1
                     fi
+                    
+                    # Créer un environnement virtuel si nécessaire
+                    if [ ! -d "venv" ]; then
+                        python3 -m venv venv
+                    fi
+                    source venv/bin/activate
+                    pip install --upgrade pip
+                    pip install pre-commit
+
                     git config --unset-all core.hooksPath
                     pre-commit install
                     pre-commit run --all-files
@@ -34,25 +42,28 @@ pipeline {
             }
         }
 
-        // Commit Phase: JUnit/Mockito Security Unit Tests
+        // Étape de compilation
         stage('Compile Stage') {
             steps {
                 sh 'mvn clean compile'
             }
         }
 
+        // Étape de tests unitaires avec JUnit/Mockito
         stage('JUnit/Mockito Tests') {
             steps {
                 sh 'mvn test'
             }
         }
 
+        // Étape de génération du rapport JaCoCo
         stage('JaCoCo Report') {
             steps {
                 sh 'mvn jacoco:report'
             }
         }
 
+        // Étape de publication du rapport JaCoCo
         stage('JaCoCo coverage report') {
             steps {
                 step([$class: 'JacocoPublisher',
@@ -64,7 +75,7 @@ pipeline {
             }
         }
 
-        // Acceptance Phase: Security Scanning Tools
+        // Étapes de sécurité (SonarQube, Nmap, OWASP Dependency-Check)
         stage('Scan : SonarQube') {
             steps {
                 withSonarQubeEnv('sq1') {
@@ -91,7 +102,7 @@ pipeline {
             }
         }
 
-        // Production Phase: Deployment and Monitoring
+        // Étapes de déploiement (Nexus, Docker, Docker Compose)
         stage('Deploy to Nexus') {
             steps {
                 sh 'mvn deploy -DskipTests -DaltDeploymentRepository=deploymentRepo::default::http://192.168.33.10:8081/repository/maven-releases/'
@@ -100,15 +111,15 @@ pipeline {
 
         stage('Building image') {
             steps {
-                sh 'docker build -t aminedridia/tp-foyer:5.0.0 .'
+                sh 'docker build -t nawel119/gestion-station-ski:1.0.0 .'
             }
         }
 
         stage('Deploy image') {
             steps {
                 withCredentials([string(credentialsId: 'dockerhub-jenkins-token', variable: 'dockerhub_token')]) {
-                    sh "docker login -u aminedridia -p ${dockerhub_token}"
-                    sh 'docker push aminedridia/tp-foyer:5.0.0'
+                    sh "docker login -u nawel119 -p ${dockerhub_token}"
+                    sh 'docker push nawel119/gestion-station-ski:1.0.0'
                 }
             }
         }
@@ -119,17 +130,20 @@ pipeline {
             }
         }
 
-        // Operations Phase: Container and Pipeline Monitoring
+        // Étape de démarrage du monitoring des conteneurs
         stage('Start Monitoring Containers') {
             steps {
                 sh 'docker start be79135ec1cc'
             }
         }
 
+        // Étape de notification par email
         stage('Email Notification') {
             steps {
                 mail bcc: '', 
-                     body: '''Final Report: The pipeline has completed successfully. No action required.''', 
+                     body: '''
+Final Report: The pipeline has completed successfully. No action required.
+''', 
                      cc: '', 
                      from: '', 
                      replyTo: '', 
@@ -142,9 +156,9 @@ pipeline {
     post {
         success {
             script {
-                emailext(
+                emailext (
                     subject: "Build Success: ${currentBuild.fullDisplayName}",
-                    body: """Le build a réussi ! Consultez les détails à ${env.BUILD_URL}""",
+                    body: "Le build a réussi ! Consultez les détails à ${env.BUILD_URL}",
                     recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'DevelopersRecipientProvider']],
                     to: 'aminedridia9@gmail.com'
                 )
@@ -152,9 +166,9 @@ pipeline {
         }
         failure {
             script {
-                emailext(
+                emailext (
                     subject: "Build Failure: ${currentBuild.fullDisplayName}",
-                    body: """Le build a échoué ! Vérifiez les détails à ${env.BUILD_URL}""",
+                    body: "Le build a échoué ! Vérifiez les détails à ${env.BUILD_URL}",
                     recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'DevelopersRecipientProvider']],
                     to: 'aminedridia9@gmail.com'
                 )
@@ -162,9 +176,9 @@ pipeline {
         }
         always {
             script {
-                emailext(
+                emailext (
                     subject: "Build Notification: ${currentBuild.fullDisplayName}",
-                    body: """Consultez les détails du build à ${env.BUILD_URL}""",
+                    body: "Consultez les détails du build à ${env.BUILD_URL}",
                     recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'DevelopersRecipientProvider']],
                     to: 'aminedridia9@gmail.com'
                 )
