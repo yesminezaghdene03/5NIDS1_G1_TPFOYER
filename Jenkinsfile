@@ -57,7 +57,7 @@ pipeline {
         stage('Docker Build') { // Stage pour construire l'image Docker
             steps {
                 script {
-                    sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
+                     sh "docker build -t yesmin1/tp-foyer:5.0.0 ."
                 }
             }
         }
@@ -67,10 +67,10 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'Docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                     script {
                         // Se connecter à Docker Hub avec les credentials Jenkins
-                        sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD'
+                        sh "docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD"
 
                         // Pousser l'image dans Docker Hub avec le bon nom d'utilisateur
-                        sh "docker push yesmin1/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
+                        sh "docker push yesmin1/tp-foyer:5.0.0"
                     }
                 }
             }
