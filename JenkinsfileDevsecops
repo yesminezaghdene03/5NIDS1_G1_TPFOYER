@@ -10,9 +10,7 @@ pipeline {
         SONARQUBE_TOKEN = 'sqp_bc225e0c7bd8daa746a774a9dcc9a6e5cd548f0e'
     }
 
-
-
-
+    stages {
         stage('SCM Checkout') {
             steps {
                 // Cloner le dépôt et se placer sur la branche EmnaBelkhiria_NIDS1_G1
@@ -108,7 +106,6 @@ pipeline {
 
     post {
         always {
-            // Nettoyage après chaque exécution
             sh 'docker-compose down'
             sh 'docker system prune -f'
         }
