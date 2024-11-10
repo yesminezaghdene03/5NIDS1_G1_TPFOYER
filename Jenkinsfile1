@@ -1,94 +1,66 @@
 pipeline {
     agent any
-
     environment {
-        IMAGE_NAME = 'my-image'
-        DOCKER_REGISTRY = 'docker.io'
-        DOCKER_REPO = 'library' // Remplace par ton propre nom de repo si nécessaire
+        DOCKER_IMAGE = 'my-image'
+        DOCKER_TAG = 'latest'
     }
-
     stages {
-        stage('Checkout SCM') {
+        stage('Declarative: Checkout SCM') {
             steps {
                 checkout scm
             }
         }
-
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh 'docker build -t ${DOCKER_REGISTRY}/${DOCKER_REPO}/${IMAGE_NAME} .'
+                    sh 'docker build -t docker.io/library/${DOCKER_IMAGE}:${DOCKER_TAG} .'
                 }
             }
         }
-
         stage('Push Docker Image to DockerHub') {
             steps {
                 script {
-                    // Se connecter à Docker Hub avec des informations d'identification stockées dans Jenkins
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
                         sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin'
+                        sh 'docker push docker.io/library/${DOCKER_IMAGE}:${DOCKER_TAG}'
                     }
-                    // Pousser l'image Docker
-                    sh 'docker push ${DOCKER_REGISTRY}/${DOCKER_REPO}/${IMAGE_NAME}'
                 }
             }
         }
-
         stage('Docker Compose Down') {
             steps {
-                script {
-                    // Optionnel: Ajoute ici des commandes pour stopper les conteneurs Docker si nécessaire
-                    sh 'docker-compose down'
-                }
+                echo 'Stopping Docker containers'
+                sh 'docker-compose down'
             }
         }
-
         stage('Docker Compose Up') {
             steps {
-                script {
-                    // Optionnel: Ajoute ici des commandes pour démarrer les conteneurs Docker
-                    sh 'docker-compose up -d'
-                }
+                echo 'Starting Docker containers'
+                sh 'docker-compose up -d'
             }
         }
-
         stage('Prometheus') {
             steps {
-                script {
-                    // Ajoute ici les étapes pour configurer Prometheus
-                    sh 'echo "Configure Prometheus here"'
-                }
+                echo 'Prometheus monitoring'
+                // Add Prometheus setup commands here
             }
         }
-
         stage('Grafana') {
             steps {
-                script {
-                    // Ajoute ici les étapes pour configurer Grafana
-                    sh 'echo "Configure Grafana here"'
-                }
+                echo 'Grafana dashboard setup'
+                // Add Grafana setup commands here
             }
         }
-
         stage('Cleanup Old Docker Images') {
             steps {
-                script {
-                    // Optionnel: Nettoyer les images Docker plus anciennes si nécessaire
-                    sh 'docker image prune -f'
-                }
+                echo 'Cleaning up old Docker images'
+                sh 'docker image prune -f'
             }
         }
-
-        stage('Declarative: Post Actions') {
-            steps {
-                emailext(
-                    to: 'aminedridia9@gmail.com',
-                    subject: 'Build Completed',
-                    body: 'The Jenkins pipeline has completed successfully.',
-                    attachLog: true
-                )
-            }
+    }
+    post {
+        always {
+            emailext to: 'aminedridia9@gmail.com', subject: 'Jenkins Pipeline Result', body: 'The Jenkins pipeline has finished running.'
         }
     }
 }
