@@ -89,7 +89,7 @@ pipeline {
                     sleep(time: 1, unit: 'MINUTES')
 
                     // Récupérer l'adresse IP du conteneur
-                    def containerIP = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' tp_foyer_app", returnStdout: true).trim()
+                    def containerIP = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' tp-foyer-app", returnStdout: true).trim()
 
                     if (!containerIP) {
                         error("Failed to resolve container IP address.")

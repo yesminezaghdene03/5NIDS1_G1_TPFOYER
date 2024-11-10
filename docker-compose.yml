@@ -13,7 +13,7 @@ services:
     networks:
       - app-network  # Réseau personnalisé pour la communication avec l'application
 
-  tp_foyer_app:  # Nom du service ajusté pour correspondre à la commande 'docker inspect' dans la pipeline
+  tp-foyer-app:  # Nom du service ajusté pour correspondre à la commande 'docker inspect' dans la pipeline
     image: emnabelkhiria-5nids1:latest  # Image de l'application
     ports:
       - "8089:8089"  # Mappage du port 8089 de l'hôte vers le conteneur
