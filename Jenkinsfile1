@@ -2,23 +2,6 @@ pipeline {
     agent any
 
     stages {
-        stage('Declarative: Checkout SCM') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Install Python3 Venv') {
-            steps {
-                script {
-                    echo "Vérification de l'installation de python3-venv"
-                    sh '''
-                        dpkg -s python3-venv || sudo apt-get install -y python3-venv
-                    '''
-                }
-            }
-        }
-
         stage('Pre-commit Security Hooks') {
             steps {
                 script {
@@ -28,7 +11,8 @@ pipeline {
                         python3 -m venv venv
                         . venv/bin/activate  # Remplacer 'source' par '.'
                         pip install pre-commit
-                        pre-commit install
+                        git config --unset-all core.hooksPath  # Réinitialiser la configuration
+                        pre-commit install  # Installer les hooks
                     '''
                 }
             }
@@ -36,72 +20,64 @@ pipeline {
 
         stage('Compile') {
             steps {
-                echo "Compilation du projet"
-                // Ajoute ici la commande pour compiler ton projet, par exemple :
-                // sh './gradlew build' (si tu utilises Gradle)
+                echo "Compilation du code"
+                // Ajoute ici les commandes de compilation si nécessaire
             }
         }
 
         stage('JUnit/Mockito Tests') {
             steps {
-                echo "Exécution des tests unitaires"
-                // Ajoute ici la commande pour exécuter tes tests, par exemple :
-                // sh './gradlew test' (si tu utilises Gradle)
+                echo "Exécution des tests JUnit/Mockito"
+                // Ajoute ici les commandes pour exécuter les tests
             }
         }
 
         stage('Scan: SonarQube') {
             steps {
-                echo "Scan du code avec SonarQube"
-                // Ajoute ici la commande pour analyser le code avec SonarQube, par exemple :
-                // sh './gradlew sonarqube' (si tu utilises Gradle)
+                echo "Analyse SonarQube"
+                // Ajoute ici les commandes pour le scan SonarQube
             }
         }
 
         stage('Security Scan: Trufflehog') {
             steps {
                 echo "Scan de sécurité avec Trufflehog"
-                // Ajoute ici la commande pour exécuter Trufflehog, par exemple :
-                // sh 'trufflehog --scan ./path/to/repo'
+                // Ajoute ici les commandes pour Trufflehog
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo "Construction de l'image Docker"
-                // Ajoute ici la commande pour construire l'image Docker, par exemple :
-                // sh 'docker build -t my-image .'
+                echo "Création de l'image Docker"
+                // Ajoute ici les commandes pour créer l'image Docker
             }
         }
 
         stage('Push Docker Image to DockerHub') {
             steps {
                 echo "Push de l'image Docker vers DockerHub"
-                // Ajoute ici la commande pour pousser l'image Docker vers DockerHub, par exemple :
-                // sh 'docker push my-image'
+                // Ajoute ici les commandes pour pousser l'image Docker vers DockerHub
             }
         }
 
         stage('Run Docker Compose') {
             steps {
                 echo "Exécution de Docker Compose"
-                // Ajoute ici la commande pour exécuter Docker Compose, par exemple :
-                // sh 'docker-compose up -d'
+                // Ajoute ici les commandes pour exécuter Docker Compose
             }
         }
 
         stage('Deploy to Nexus') {
             steps {
                 echo "Déploiement vers Nexus"
-                // Ajoute ici la commande pour déployer vers Nexus, par exemple :
-                // sh './gradlew deploy' (si tu utilises Gradle)
+                // Ajoute ici les commandes pour déployer vers Nexus
             }
         }
 
         stage('Post Actions') {
             steps {
                 echo "Actions post-build"
-                // Ajoute ici les actions à réaliser après le build, comme des notifications
+                // Ajoute ici les actions post-build nécessaires
             }
         }
     }
