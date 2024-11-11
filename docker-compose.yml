@@ -34,7 +34,7 @@ services:
           "spring.jpa.show-sql": true,
           "spring.jpa.hibernate.ddl-auto": "update",
           "spring.jpa.properties.hibernate.dialect": "org.hibernate.dialect.MySQLDialect",
-          "server.port": 8089,
+          "server.port": 8091,
           "server.servlet.context-path": "/tpfoyer",
           "management.endpoints.web.exposure.include": "prometheus",
           "management.endpoint.prometheus.enabled": true
