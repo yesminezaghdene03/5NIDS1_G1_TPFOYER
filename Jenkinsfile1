@@ -1,126 +1,95 @@
 pipeline {
     agent any
 
-    tools {
-        git 'Default' // Assurez-vous que 'Default' correspond à l'installation Git configurée dans Jenkins
-        maven 'M2_Home'
-        jdk 'JAVA_HOME'
-    }
-
     environment {
-        DOCKER_IMAGE_NAME = 'tp-foyer' // Nom de l'image Docker
-        DOCKER_TAG = '5.0.0' // Tag de l'image Docker
+        EMAIL_RECIPIENT = 'aminedridia9@gmail.com'
     }
 
     stages {
-        stage('Checkout') {
+        stage('GIT') {
             steps {
-                git branch: 'AmineDridia_5NIDS1_G1', url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
+                git branch: 'AmineDridia_5NIDS1_G1',
+                    url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER'
             }
         }
 
+        /* 
         stage('Build') {
             steps {
-                sh 'mvn clean install'
+                sh 'mvn clean compile' // Étape de compilation
             }
         }
+        */
 
-        stage('Test') {
+        /* 
+        stage('Scan') {
             steps {
-                sh 'mvn test'
+                withSonarQubeEnv('sq1') {
+                    sh 'mvn sonar:sonar' // Analyse SonarQube avec les classes compilées
+                }
             }
         }
+        */
 
-        stage('Package') {
+        /* 
+        stage('Deploy to Nexus') {
             steps {
-                sh 'mvn package'
+                sh 'mvn deploy -DskipTests -DaltDeploymentRepository=deploymentRepo::default::http://192.168.33.10:8081/repository/maven-releases/'
             }
         }
+        */
 
-        stage('Upload Artifact') { // Stage pour uploader l'artifact sur Nexus
+        stage('Build Docker Image') {
             steps {
-                nexusArtifactUploader(
-                    nexusVersion: 'nexus3',
-                    protocol: 'http',
-                    nexusUrl: '192.168.50.4:8081', // Ajout du protocole http://
-                    groupId: 'tn.esprit',
-                    version: '5.0.0', // Assurez-vous que cette version est correcte pour votre déploiement
-                    repository: 'tp-foyer2',
-                    credentialsId: 'nexus-credentials', // Utilisez l'ID configuré ici
-                    artifacts: [
-                        [artifactId: 'tp-foyer', classifier: '', file: 'target/tp-foyer-5.0.0.jar', type: 'jar']
-                    ]
-                )
+                sh 'sudo docker build -t aminedridia/tp-foyer:5.0.0 .'
             }
         }
 
-        stage('Docker Build') { // Stage pour construire l'image Docker
+        stage('Push Docker Image to DockerHub') {
+            steps {
+                sh '''
+                    sudo docker login -u aminedridia -p adminamine 
+                    sudo docker push aminedridia/tp-foyer:5.0.0
+                '''
+            }
+        }
+
+        stage('Run Docker Compose') {
             steps {
                 script {
-                    sh "docker build -t aminedridia/tp-foyer:5.0.0 ."
+                    sh '''
+                        sudo docker-compose down 
+                        sudo docker-compose up -d
+                    '''
                 }
             }
         }
 
-        stage('Docker Push') { // Stage pour pousser l'image Docker dans Docker Hub
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'Docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                    script {
-                        // Se connecter à Docker Hub avec les credentials Jenkins
-                        sh "docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD"
-
-                        // Pousser l'image dans Docker Hub avec le bon nom d'utilisateur
-                        sh "docker push aminedridia/tp-foyer:5.0.0"
-                    }
-                }
-            }
-        }
-
-        stage('Deploy') { // Stage pour déployer avec Docker Compose
+        stage('Send Notification') {
             steps {
                 script {
-                    sh "docker-compose up -d"
-                }
-            }
-        }
-
-        stage('Start Prometheus') { // Stage pour démarrer Prometheus
-            steps {
-                script {
-                    sh 'docker start prometheus'
-                }
-            }
-        }
-
-        stage('Start Grafana') { // Stage pour démarrer Grafana
-            steps {
-                script {
-                    sh 'docker start grafana'
+                    def buildStatus = currentBuild.currentResult
+                    def subject = "Build ${buildStatus}: TP Foyer Jenkins Pipeline"
+                    def body = "The build for the TP Foyer project has finished with status: ${buildStatus}. Please check the Jenkins dashboard for more details."
+                    
+                    // Send email notification
+                    emailext(
+                        to: "${EMAIL_RECIPIENT}",
+                        subject: subject,
+                        body: body,
+                        mimeType: 'text/html'
+                    )
                 }
             }
         }
     }
 
     post {
-        always {
-            // Debugging step to check the directory structure
-            sh 'echo "Listing directory contents:"'
-            sh 'ls -R target/surefire-reports/'  // This will list the files in the 'surefire-reports' folder
-
-            // Then, attempt to gather JUnit reports
-            junit '**/target/surefire-reports/*.xml'
-            archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true
-        }
         success {
-            echo 'Build and deployment successful!'
-            mail to: 'aminedridia9@gmail.com', // Modification de l'email
-                 subject: "Build Success - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                 body: "The build was successful! Check the details at ${env.BUILD_URL}"
+            echo "Build was successful. Notification sent."
         }
         failure {
-            mail to: 'aminedridia9@gmail.com', // Modification de l'email
-                 subject: "Build Failure - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                 body: "The build failed. Please check the details at ${env.BUILD_URL}"
+            echo "Build failed. Notification sent."
         }
     }
 }
