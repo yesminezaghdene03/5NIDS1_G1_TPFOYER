@@ -1,3 +1,4 @@
+version: "3.8"
 services:
   db:
     image: mysql:5.7
@@ -5,10 +6,10 @@ services:
       MYSQL_ROOT_PASSWORD: example
       MYSQL_DATABASE: db
     ports:
-      - "3307:3306"  # Use port 3307 on the host instead of 3306
+      - "3307:3306"  # Utilisation du port 3307 sur l'hôte au lieu de 3306
 
   app:
-    build: .  # Ensure there's a Dockerfile in the context of the build
+    build: .  # Assurez-vous qu'il y a un Dockerfile dans le contexte de construction
     ports:
       - "8089:8089"
     environment:
@@ -20,4 +21,23 @@ services:
       SERVER_PORT: 8089
       SERVER_SERVLET_CONTEXT_PATH: /tpfoyer
     depends_on:
-      - db  # Ensure the app starts after the db service
+      - db  # Assurez-vous que l'application démarre après le service db
+
+  sonarqube:
+    image: sonarqube:latest
+    container_name: sonarqube
+    ports:
+      - "9000:9000"  # Le port exposé pour accéder à SonarQube depuis votre navigateur
+    environment:
+      - SONARQUBE_JDBC_URL=jdbc:mysql://db:3306/sonar  # URL de la base de données SonarQube
+      - SONARQUBE_JDBC_USERNAME=root
+      - SONARQUBE_JDBC_PASSWORD=example
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data  # Persistance des données
+      - sonarqube_extensions:/opt/sonarqube/extensions  # Extensions persistantes
+    depends_on:
+      - db  # Assurez-vous que SonarQube attend que la base de données soit prête
+
+volumes:
+  sonarqube_data:
+  sonarqube_extensions:

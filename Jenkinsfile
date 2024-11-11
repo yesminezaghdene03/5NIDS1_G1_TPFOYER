@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     tools {
-        git 'Default' // Assurez-vous que 'Default' correspond à l'installation Git configurée dans Jenkins
+        git 'Default' // Assure-toi que 'Default' correspond à l'installation Git configurée dans Jenkins
         maven 'M2_HOME'
         jdk 'JAVA_HOME'
     }
@@ -10,6 +10,11 @@ pipeline {
     environment {
         DOCKER_IMAGE_NAME = 'tp-foyer' // Nom de l'image Docker
         DOCKER_TAG = '5.0.0' // Tag de l'image Docker
+        SONAR_HOST_URL = 'http://192.168.50.4:9000' // URL de ton serveur SonarQube
+        SONAR_PROJECT_KEY = 'My_project' // Clé de projet SonarQube
+        SONAR_PROJECT_NAME = 'tp-foyer 2' // Nom du projet SonarQube
+        SONAR_PROJECT_VERSION = '1.0' // Version du projet SonarQube
+        SONAR_LOGIN = 'sqp_9233859e77bc9e349efbd11872ad11527f1e745c' // Token d'authentification SonarQube
     }
 
     stages {
@@ -25,6 +30,25 @@ pipeline {
             }
         }
 
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    sh """
+                    mvn sonar:sonar \
+                        -Dsonar.host.url=${SONAR_HOST_URL} \
+                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                        -Dsonar.projectName=${SONAR_PROJECT_NAME} \
+                        -Dsonar.projectVersion=${SONAR_PROJECT_VERSION} \
+                        -Dsonar.java.binaries=target/classes \
+                        -Dsonar.sources=src/main/java \
+                        -Dsonar.tests=src/test/java \
+                        -Dsonar.login=${SONAR_LOGIN} \
+                        -Dsonar.verbose=true
+                    """
+                }
+            }
+        }
+
         stage('Test') {
             steps {
                 sh 'mvn test'
@@ -37,16 +61,16 @@ pipeline {
             }
         }
 
-        stage('Upload Artifact') { // Stage pour uploader l'artifact sur Nexus
+        stage('Upload Artifact') {
             steps {
                 nexusArtifactUploader(
                     nexusVersion: 'nexus3',
                     protocol: 'http',
-                    nexusUrl: '192.168.50.4:8081', // Ajout du protocole http://
+                    nexusUrl: '192.168.50.4:8081',
                     groupId: 'tn.esprit',
-                    version: '5.0.0', // Assurez-vous que cette version est correcte pour votre déploiement
+                    version: '5.0.0',
                     repository: 'tp-foyer2',
-                    credentialsId: 'nexus-credentials', // Utilisez l'ID configuré ici
+                    credentialsId: 'nexus-credentials',
                     artifacts: [
                         [artifactId: 'tp-foyer', classifier: '', file: 'target/tp-foyer-5.0.0.jar', type: 'jar']
                     ]
@@ -54,29 +78,26 @@ pipeline {
             }
         }
 
-        stage('Docker Build') { // Stage pour construire l'image Docker
+        stage('Docker Build') {
             steps {
                 script {
-                    sh "docker build -t yesmin1/tp-foyer:5.0.0 ."
+                    sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
                 }
             }
         }
 
-        stage('Docker Push') { // Stage pour pousser l'image Docker dans Docker Hub
+        stage('Docker Push') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'Docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                     script {
-                        // Se connecter à Docker Hub avec les credentials Jenkins
-                        sh "docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD"
-
-                        // Pousser l'image dans Docker Hub avec le bon nom d'utilisateur
+                        sh "echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin"
                         sh "docker push yesmin1/tp-foyer:5.0.0"
                     }
                 }
             }
         }
 
-        stage('Deploy') { // Stage pour déployer avec Docker Compose
+        stage('Deploy') {
             steps {
                 script {
                     sh "docker-compose up -d"
@@ -103,11 +124,8 @@ pipeline {
 
     post {
         always {
-            // Debugging step to check the directory structure
             sh 'echo "Listing directory contents:"'
-            sh 'ls -R target/surefire-reports/'  // This will list the files in the 'surefire-reports' folder
-
-            // Then, attempt to gather JUnit reports
+            sh 'ls -R target/surefire-reports/'  // Liste les fichiers dans 'surefire-reports'
             junit '**/target/surefire-reports/*.xml'
             archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true
         }

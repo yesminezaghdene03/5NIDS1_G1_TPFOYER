@@ -19,6 +19,8 @@
 
     <properties>
         <java.version>17</java.version>
+        <!-- SonarQube configuration -->
+        <sonar.host.url>http://192.168.50.4:9000</sonar.host.url> <!-- Correct placement -->
     </properties>
 
     <dependencies>
@@ -158,7 +160,7 @@
             <plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
-                <version>8.1.2</version> <!-- Vérifiez la version actuelle si nécessaire -->
+                <version>8.1.2</version>
                 <executions>
                     <execution>
                         <goals>
