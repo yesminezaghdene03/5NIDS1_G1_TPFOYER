@@ -2,8 +2,10 @@ pipeline {
     agent any
 
     environment {
-        SONARQUBE_SERVER = 'http://192.168.33.10:9000'
-        EMAIL_RECIPIENT = 'aminedridia9@gmail.com'
+        SONARQUBE_SERVER = 'http://192.168.33.10:9000'  // URL de votre serveur SonarQube
+        DOCKER_IMAGE = 'myapp'  // Exemple de nom d'image Docker
+        DOCKER_TAG = 'latest'
+        NEXUS_REPO = 'nexus-repo'  // Remplacez par votre dépôt Nexus
     }
 
     stages {
@@ -16,8 +18,8 @@ pipeline {
                         python3 -m venv venv
                         . venv/bin/activate
                         pip install pre-commit
-                        git config --unset-all core.hooksPath
-                        pre-commit install
+                        git config --unset-all core.hooksPath  # Réinitialiser la configuration
+                        pre-commit install  # Installer les hooks
                     '''
                 }
             }
@@ -26,52 +28,57 @@ pipeline {
         stage('Compile') {
             steps {
                 echo "Compilation du code"
-                // Ajoutez ici les commandes de compilation si nécessaire
-            }
-        }
-
-        stage('Static Code Analysis: SonarQube') {
-            steps {
-                echo "Analyse SonarQube du code"
-                script {
-                    // Commande pour lancer l'analyse SonarQube
-                    sh 'mvn clean install sonar:sonar -Dsonar.host.url=${SONARQUBE_SERVER}'
-                }
+                // Ajoutez ici les commandes nécessaires pour la compilation
             }
         }
 
         stage('JUnit/Mockito Tests') {
             steps {
                 echo "Exécution des tests JUnit/Mockito"
-                // Ajoutez ici les commandes pour exécuter les tests
+                // Ajoutez ici les commandes pour exécuter les tests unitaires
             }
         }
 
-        stage('Security Scan: OWASP Dependency-Check') {
+        stage('Static Code Analysis: SonarQube') {
             steps {
-                echo "Scan de sécurité avec OWASP Dependency-Check"
-                // Ajoutez ici les commandes pour le scan OWASP Dependency-Check
+                echo "Analyse SonarQube"
+                sh '''
+                    mvn clean install sonar:sonar -Dsonar.host.url=${SONARQUBE_SERVER}
+                '''
+            }
+        }
+
+        stage('Security Scan: Trufflehog') {
+            steps {
+                echo "Scan de sécurité avec Trufflehog"
+                // Ajoutez ici les commandes pour Trufflehog
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 echo "Création de l'image Docker"
-                // Ajoutez ici les commandes pour créer l'image Docker
+                sh '''
+                    docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
+                '''
             }
         }
 
         stage('Push Docker Image to DockerHub') {
             steps {
                 echo "Push de l'image Docker vers DockerHub"
-                // Ajoutez ici les commandes pour pousser l'image Docker vers DockerHub
+                sh '''
+                    docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+                '''
             }
         }
 
         stage('Run Docker Compose') {
             steps {
                 echo "Exécution de Docker Compose"
-                // Ajoutez ici les commandes pour exécuter Docker Compose
+                sh '''
+                    docker-compose up -d
+                '''
             }
         }
 
@@ -93,18 +100,13 @@ pipeline {
     post {
         success {
             echo "Pipeline terminé avec succès"
-            emailext(
-                subject: "Build Jenkins réussi",
-                body: "Le build Jenkins a été exécuté avec succès.",
-                to: "${EMAIL_RECIPIENT}"
-            )
         }
         failure {
             echo "Le build a échoué"
-            emailext(
-                subject: "Build Jenkins échoué",
-                body: "Le build Jenkins a échoué. Veuillez consulter les logs pour plus de détails.",
-                to: "${EMAIL_RECIPIENT}"
+            emailext (
+                to: 'aminedridia9@gmail.com',
+                subject: "Échec du pipeline Jenkins",
+                body: "Le pipeline Jenkins a échoué. Veuillez vérifier les logs pour plus de détails."
             )
         }
     }
