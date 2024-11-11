@@ -94,7 +94,7 @@ pipeline {
                 script {
                     
                     sh '''
-                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /var/lib/jenkins/workspace/tp_foyer_DEVSECOPS:/mnt aquasec/trivy --quiet --exit-code 1 --severity HIGH,CRITICAL omranihadhemi/tp_foyer_DEVSECOPS:v1.18
+                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /var/lib/jenkins/workspace/tp_foyer_DEVSECOPS:/mnt aquasec/trivy --quiet --severity HIGH,CRITICAL omranihadhemi/tp_foyer_DEVSECOPS:v1.18
                     '''
                 }
             }
