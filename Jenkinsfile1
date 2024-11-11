@@ -1,165 +1,150 @@
 pipeline {
     agent any
 
-    environment {
-        NEXUS_URL = 'http://192.168.33.10:8081' // Remplace par ton URL Nexus
-        NEXUS_REPO = 'maven-releases' // Remplace par ton dépôt Nexus
+    tools {
+        jdk 'JAVA_HOME'
+        maven 'M2_HOME'
     }
 
     stages {
-
-        // Phase Pré-Commit
-        stage('Pre-Commit: Code Linting') {
+        // Étape GIT : Récupérer le code depuis le dépôt
+        stage('GIT') {
             steps {
-                echo 'Exécution de Linting'
-                sh 'mvn clean install -Dcheckstyle.skip=true'  // Java Checkstyle pour linting
+                git branch: 'AmineDridia_5NIDS1_G1',
+                    url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER'
             }
         }
 
-        stage('Pre-Commit: Secrets Scanning') {
+        // Étape de pré-commit : Installation et exécution des hooks de sécurité
+        stage('Pre-commit Security Hooks') {
             steps {
-                echo 'Scan des Secrets avec Trufflehog'
-                sh '''
-                    # Installer Trufflehog si non installé
-                    if ! command -v trufflehog &> /dev/null; then
-                        echo "Trufflehog non trouvé, installation en cours..."
-                        pip install trufflehog
-                    else
-                        echo "Trufflehog déjà installé"
+                script {
+                    sh '''
+                    if ! command -v pre-commit &> /dev/null
+                    then
+                        echo "pre-commit n'est pas installé, installation dans un environnement virtuel..."
+                        python3 -m venv venv
+                        . venv/bin/activate
+                        pip install pre-commit
                     fi
-                    trufflehog filesystem --directory . --json
-                '''
+                    git config --unset-all core.hooksPath
+                    pre-commit install
+                    pre-commit run --all-files
+                    '''
+                }
             }
         }
 
-        // Phase Commit
-        stage('Commit: Clone du Repository') {
+        // Étape de compilation avec Maven
+        stage('Compile') {
             steps {
-                echo 'Clonage du Repository'
-                git url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git', branch: 'WassimBELHAJSALEM-5NIDS1-G1'
+                sh 'mvn clean compile'
             }
         }
 
-        stage('Commit: Clean') {
+        // Étape des tests unitaires : JUnit/Mockito
+        stage('JUnit/Mockito Tests') {
             steps {
-                sh 'mvn clean'
-            }
-        }
-
-        stage('Commit: Compilation avec Maven') {
-            steps {
-                sh 'mvn compile'
-            }
-        }
-
-        // Phase Acceptance
-        stage('Acceptance: Tests Unitaires') {
-            steps {
-                echo 'Exécution des Tests Unitaires'
                 sh 'mvn test'
             }
         }
 
-        stage('Acceptance: Analyse de la Qualité du Code') {
+        // Analyse de la couverture du code avec JaCoCo
+        stage('JaCoCo Report') {
             steps {
-                echo 'Exécution de l\'Analyse SonarQube'
-                withSonarQubeEnv(installationName: 'sq1') {
-                    sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:4.0.0.4121:sonar'
+                sh 'mvn jacoco:report'
+            }
+        }
+
+        // Publication du rapport JaCoCo
+        stage('JaCoCo coverage report') {
+            steps {
+                step([$class: 'JacocoPublisher',
+                      execPattern: '**/target/jacoco.exec',
+                      classPattern: '**/classes',
+                      sourcePattern: '**/src',
+                      exclusionPattern: '*/target/**/,**/*Test*,**/*_javassist/**'
+                ])
+            }
+        }
+
+        // Analyse de la qualité du code avec SonarQube
+        stage('Scan: SonarQube') {
+            steps {
+                withSonarQubeEnv('sq1') {
+                    sh 'mvn sonar:sonar'
                 }
             }
         }
 
-        stage('Acceptance: Scan des Dépendances') {
+        // Étape de sécurité : Scan avec Trufflehog pour détecter les secrets dans le code
+        stage('Security Scan: Trufflehog') {
             steps {
-                echo 'Exécution du Scan des Dépendances'
-                sh 'mvn org.owasp:dependency-check-maven:check' // OWASP Dependency-Check
+                script {
+                    echo "Démarrage du scan de sécurité Trufflehog..."
+                    sh 'trufflehog filesystem --directory . --json'
+                }
             }
         }
 
-        stage('Acceptance: Packaging sans Tests') {
+        // Étape de sécurité : Scan des dépendances avec OWASP Dependency-Check
+        stage('Security Scan: OWASP Dependency-Check') {
             steps {
-                sh 'mvn package -DskipTests'
+                script {
+                    echo "Démarrage du scan OWASP Dependency-Check..."
+                    sh 'mvn org.owasp:dependency-check-maven:check'
+                }
             }
         }
 
-        stage('Acceptance: Tests de Sécurité') {
-            steps {
-                echo 'Exécution des Tests de Sécurité'
-                sh 'bandit -r .' // Exemple : Bandit pour Python (remplace par l'outil adapté à ton langage)
-            }
-        }
-
+        // Déploiement de l'application sur Nexus
         stage('Deploy to Nexus') {
             steps {
-                echo 'Déploiement vers Nexus'
+                sh 'mvn deploy -DskipTests -DaltDeploymentRepository=deploymentRepo::default::http://192.168.33.10:8081/repository/maven-releases/'
+            }
+        }
 
+        // Création de l'image Docker
+        stage('Build Docker Image') {
+            steps {
+                sh 'sudo docker build -t aminedridia/tp-foyer:5.0.0 .'
+            }
+        }
+
+        // Push de l'image Docker vers DockerHub
+        stage('Push Docker Image to DockerHub') {
+            steps {
+                sh '''
+                    sudo docker login -u aminedridia -p adminamine
+                    sudo docker push aminedridia/tp-foyer:5.0.0
+                '''
+            }
+        }
+
+        // Exécution de Docker Compose
+        stage('Run Docker Compose') {
+            steps {
                 script {
-                    if (!fileExists('target/tp-foyer-5.0.0.jar')) {
-                        error("Le fichier JAR n'existe pas: target/tp-foyer-5.0.0.jar.original")
-                    }
+                    sh '''
+                        sudo docker-compose down 
+                        sudo docker-compose up -d
+                    '''
                 }
-
-                withCredentials([usernamePassword(credentialsId: 'nexusCredential', usernameVariable: 'NEXUS_USERNAME', passwordVariable: 'NEXUS_PASSWORD')]) {
-                    sh """
-                    mvn -s /usr/share/maven/conf/settings.xml deploy:deploy-file \
-                      -DgroupId=com.example \
-                      -DartifactId=tp-foyer \
-                      -Dversion=5.0.0 \
-                      -Dpackaging=jar \
-                      -Dfile=target/tp-foyer-5.0.0.jar \
-                      -DrepositoryId=deploymentRepo \
-                      -Durl=$NEXUS_URL/repository/$NEXUS_REPO/ \
-                      -Dusername=$NEXUS_USERNAME \
-                      -Dpassword=$NEXUS_PASSWORD
-                    """
-                }
-            }
-        }
-
-        // Phase Operations en Production
-        stage('Création de l\'Image Docker') {
-            steps {
-                echo 'Création de l\'Image Docker'
-                sh 'docker build -t wassimbhs/tp-foyer:1.0.0 .'
-            }
-        }
-
-        stage('Scan des Vulnérabilités de l\'Image Docker') {
-            steps {
-                echo 'Scan de l\'Image Docker pour les Vulnérabilités'
-                sh 'trivy image wassimbhs/tp-foyer:1.0.0' // Scan de l'image avec Trivy
-            }
-        }
-
-        stage('Push de l\'Image vers Dockerhub') {
-            steps {
-                echo 'Push de l\'Image vers Dockerhub'
-                withCredentials([usernamePassword(credentialsId: 'dockerhubCredential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                    sh """
-                    echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-                    docker push "$DOCKER_USERNAME/tp-foyer:1.0.0"
-                    """
-                }
-            }
-        }
-
-        stage('Déploiement avec Docker Compose') {
-            steps {
-                echo 'Démarrage Backend + DB avec Docker Compose'
-                sh 'docker compose up -d'
             }
         }
     }
 
     post {
-        always {
-            cleanWs() // Nettoyer l'espace de travail après le build
+        success {
+            echo 'Build and deployment successful!'
+            mail to: 'aminedridia9@gmail.com',
+                 subject: "Build Success - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                 body: "The build was successful! Check the details at ${env.BUILD_URL}"
         }
-
         failure {
             mail to: 'aminedridia9@gmail.com',
-                 subject: "Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                 body: "Le job de build '${env.JOB_NAME}' a échoué lors du build #${env.BUILD_NUMBER}. Veuillez consulter les logs pour plus de détails."
+                 subject: "Build Failure - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                 body: "The build failed. Please check the details at ${env.BUILD_URL}"
         }
     }
 }
