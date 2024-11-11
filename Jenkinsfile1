@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        MAVEN_HOME = tool name: 'M2_HOME', type: 'ToolLocation'
+        MAVEN_HOME = tool name: 'M2_Home', type: 'ToolLocation'
         PYTHON_VENV = 'venv'
     }
 
