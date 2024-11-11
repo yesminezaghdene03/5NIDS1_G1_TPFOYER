@@ -99,7 +99,6 @@ pipeline {
         stage('Docker Compose Down') {
             steps {
                 script {
-                    // Arrête et supprime les conteneurs du service défini dans docker-compose.yml
                     sh 'docker compose down'
                 }
             }
@@ -128,7 +127,7 @@ pipeline {
         stage('Cleanup Old Docker Images') {
             steps {
                 script {
-                    // Supprime les images inutilisées
+                    
                     sh 'docker image prune -f'
                 }
             }
