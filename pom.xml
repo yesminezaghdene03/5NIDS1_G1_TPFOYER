@@ -33,7 +33,7 @@
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.33</version>
+            <version>8.0.33</version> <!-- Version ajoutée ici -->
         </dependency>
 
         <!-- Lombok -->
@@ -80,6 +80,7 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
 
     <build>
@@ -110,8 +111,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-
         </plugins>
     </build>
 
@@ -123,4 +122,5 @@
             <url>http://192.168.50.4:8081/repository/myRepo/</url>
         </repository>
     </distributionManagement>
+
 </project>

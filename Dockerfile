@@ -1,7 +1,5 @@
 FROM openjdk:17-jdk-slim
-
 WORKDIR /app
-
 # Copier l'artefact généré par Maven dans le conteneur
 COPY ./target/tp-foyer-5.0.0.jar app.jar
 

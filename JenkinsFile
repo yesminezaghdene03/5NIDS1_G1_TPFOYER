@@ -49,24 +49,7 @@ pipeline {
             }
         }
 
-        /*stage('Nexus Deployment') {
-            steps {
-                // Déployer l'artefact dans Nexus
-                nexusArtifactUploader(
-                    nexusVersion: 'nexus3',
-                    protocol: 'http',
-                    nexusUrl: 'http://192.168.50.4:8081/repository/myRepo/', // URL complète pour Nexus
-                    groupId: 'tn.esprit',
-                    version: '5.0.0', // Assurez-vous que cette version est correcte pour votre déploiement
-                    repository: 'deploymentRepo',
-                    credentialsId: 'nexusCredential', // Utilisez l'ID configuré ici
-                    artifacts: [
-                        [artifactId: 'tp-foyer', classifier: '', file: 'target/tp-foyer-5.0.0.jar', type: 'jar']
-                    ]
-                )
-            }
-        }*/
-        stage('Deployment Nexus'){
+        stage('Deployment Nexus') {
             steps {
                 sh "mvn deploy -Dmaven.test.skip=true -DaltDeploymentRepository=deploymentRepo::default::http://192.168.50.4:8081/repository/myRepo/"
             }
@@ -80,10 +63,11 @@ pipeline {
                 }
             }
         }
+
         stage('Docker Push') {
             steps {
                 script {
-                    // Construire l'image Docker
+                    // Pousser l'image Docker
                     sh "docker push ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
                 }
             }
@@ -94,7 +78,7 @@ pipeline {
                 script {
                     // Exécuter Docker Compose pour démarrer les services
                     sh "docker-compose up -d"
-                    // Vérifier si le service est bien lancé (facultatif)
+                    // Vérifier si le service est bien lancé
                     sh "docker-compose ps"
                 }
             }
@@ -112,9 +96,22 @@ pipeline {
 
     post {
         always {
-            // Toujours nettoyer les ressources Docker, même si un échec survient
-            sh 'docker-compose down'
-            sh 'docker system prune -f'
+            // Toujours afficher le contenu du répertoire des rapports et archiver les artefacts
+            sh 'echo "Listing directory contents:"'
+            sh 'ls -R target/surefire-reports/'  // Liste les fichiers dans 'surefire-reports'
+            junit '**/target/surefire-reports/*.xml'  // Publier les rapports de tests
+            archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true  // Archiver les artefacts générés
+        }
+        success {
+            echo 'Build and deployment successful!'
+            mail to: 'emnabelkhiria7@gmail.com',
+                 subject: "Build Success - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                 body: "The build was successful! Check the details at ${env.BUILD_URL}"
+        }
+        failure {
+            mail to: 'emnabelkhiria7@gmail.com',
+                 subject: "Build Failure - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                 body: "The build failed. Please check the details at ${env.BUILD_URL}"
         }
     }
 }
