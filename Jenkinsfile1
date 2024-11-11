@@ -1,13 +1,8 @@
 pipeline {
-    agent {
-        docker {
-            image 'python:3.10-slim'  // Utilisation de l'image Docker Python 3.10
-            args '-u root' // Exécuter les commandes avec les droits root dans le conteneur
-        }
-    }
+    agent any  // Utiliser un agent générique au lieu de Docker
 
     environment {
-        MAVEN_HOME = tool name: 'M2_HOME' // Configuration de Maven
+        MAVEN_HOME = tool name: 'M2_HOME'// Configuration de Maven
         PYTHON_VENV = 'venv' // Nom du répertoire pour l'environnement virtuel
     }
 
@@ -27,7 +22,7 @@ pipeline {
                         echo "Vérification de l'installation de python3-venv"
                         if ! dpkg -s python3-venv > /dev/null 2>&1; then
                             echo "python3-venv n'est pas installé. Installation en cours."
-                            apt-get update && apt-get install -y python3.10-venv
+                            sudo apt-get update && sudo apt-get install -y python3.10-venv
                         else
                             echo "python3-venv déjà installé."
                         fi
