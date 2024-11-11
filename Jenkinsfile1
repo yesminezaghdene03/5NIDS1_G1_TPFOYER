@@ -1,11 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        DOCKER_USERNAME = credentials('dockerhub-credentials').username  // Utilisateur DockerHub
-        DOCKER_PASSWORD = credentials('dockerhub-credentials').password  // Mot de passe DockerHub
-    }
-
     stages {
         stage('Checkout') {
             steps {
@@ -13,7 +8,7 @@ pipeline {
                 checkout scm
             }
         }
-        
+
         stage('Pre-Commit') {
             steps {
                 script {
@@ -67,10 +62,12 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Construire l'image Docker
-                    sh '''
-                    docker build -t ${DOCKER_USERNAME}/my-app .
-                    '''
+                    // Se connecter à DockerHub via les credentials Jenkins et construire l'image
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        sh '''
+                        docker build -t ${DOCKER_USERNAME}/my-app .
+                        '''
+                    }
                 }
             }
         }
@@ -79,10 +76,12 @@ pipeline {
             steps {
                 script {
                     // Se connecter à DockerHub et pousser l'image
-                    sh '''
-                    docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
-                    docker push ${DOCKER_USERNAME}/my-app
-                    '''
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        sh '''
+                        docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
+                        docker push ${DOCKER_USERNAME}/my-app
+                        '''
+                    }
                 }
             }
         }
