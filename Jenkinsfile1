@@ -5,7 +5,7 @@ pipeline {
         // Déclaration des variables d'environnement, y compris pour SonarQube et autres outils
         SONAR_HOST_URL = 'http://192.168.33.10:9000'
         SONAR_PROJECT_KEY = 'tp-foyer'
-        SONAR_LOGIN = credentials('sonar-token')
+        SONAR_LOGIN = credentials('jenkins-sonar')
     }
 
     stages {
