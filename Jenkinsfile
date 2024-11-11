@@ -9,7 +9,7 @@ pipeline {
 
     environment {
         DOCKER_IMAGE_NAME = 'tp-foyer' // Nom de l'image Docker
-        DOCKER_TAG = '5.0.0' // Tag de l'image Docker
+        DOCKER_TAG = "5.0.0" // Tag de l'image Docker
         SONAR_HOST_URL = 'http://192.168.50.4:9000' // URL de ton serveur SonarQube
         SONAR_PROJECT_KEY = 'My_project' // Clé de projet SonarQube
         SONAR_PROJECT_NAME = 'tp-foyer 2' // Nom du projet SonarQube
@@ -26,7 +26,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'mvn clean install'
+                sh 'mvn clean install'  // Installer les dépendances et compiler
             }
         }
 
@@ -51,13 +51,13 @@ pipeline {
 
         stage('Test') {
             steps {
-                sh 'mvn test'
+                sh 'mvn test'  // Exécuter les tests
             }
         }
 
         stage('Package') {
             steps {
-                sh 'mvn package'
+                sh 'mvn package'  // Créer le package JAR
             }
         }
 
@@ -100,7 +100,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    sh "docker-compose up -d"
+                    sh "docker-compose up -d"  // Déployer avec Docker Compose
                 }
             }
         }
@@ -108,7 +108,7 @@ pipeline {
         stage('Start Prometheus') {
             steps {
                 script {
-                    sh 'docker start prometheus'
+                    sh 'docker start prometheus'  // Démarrer Prometheus
                 }
             }
         }
@@ -116,7 +116,7 @@ pipeline {
         stage('Start Grafana') {
             steps {
                 script {
-                    sh 'docker start grafana'
+                    sh 'docker start grafana'  // Démarrer Grafana
                 }
             }
         }
@@ -126,8 +126,8 @@ pipeline {
         always {
             sh 'echo "Listing directory contents:"'
             sh 'ls -R target/surefire-reports/'  // Liste les fichiers dans 'surefire-reports'
-            junit '**/target/surefire-reports/*.xml'
-            archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true
+            junit '**/target/surefire-reports/*.xml'  // Publier les rapports de tests
+            archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true  // Archiver les artefacts générés
         }
         success {
             echo 'Build and deployment successful!'
