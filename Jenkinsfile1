@@ -20,8 +20,13 @@ pipeline {
             steps {
                 echo 'Scan des Secrets avec Trufflehog'
                 sh '''
-                    # Installer Trufflehog
-                    pip install trufflehog
+                    # Installer Trufflehog si non installé
+                    if ! command -v trufflehog &> /dev/null; then
+                        echo "Trufflehog non trouvé, installation en cours..."
+                        pip install trufflehog
+                    else
+                        echo "Trufflehog déjà installé"
+                    fi
                     trufflehog filesystem --directory . --json
                 '''
             }
