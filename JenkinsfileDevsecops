@@ -108,3 +108,6 @@ pipeline {
         always {
             sh 'docker-compose down'
             sh 'docker system prune -f'
+        }
+    }
+}
