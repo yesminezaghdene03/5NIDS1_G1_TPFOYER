@@ -2,8 +2,10 @@ pipeline {
     agent any
 
     environment {
-        MAVEN_HOME = tool name: 'M2_Home', 
-        PYTHON_VENV = 'venv'
+        // Définir les variables d'environnement si nécessaire
+        PYTHON_VENV_DIR = "venv"
+        DOCKER_IMAGE_NAME = "my_docker_image"
+        DOCKER_HUB_REPO = "dockerhub_user/my_docker_repo"
     }
 
     stages {
@@ -16,7 +18,6 @@ pipeline {
         stage('Install Python3 Venv') {
             steps {
                 script {
-                    // Vérifier et installer python3-venv dans l'environnement Docker si nécessaire
                     echo "Vérification de l'installation de python3-venv"
                     sh '''
                         if ! dpkg -s python3-venv > /dev/null 2>&1; then
@@ -36,8 +37,8 @@ pipeline {
                     echo "Vérification des hooks de sécurité pre-commit"
                     sh '''
                         echo "Installation de pre-commit dans un environnement virtuel..."
-                        python3 -m venv ${PYTHON_VENV}
-                        source ${PYTHON_VENV}/bin/activate
+                        python3 -m venv ${PYTHON_VENV_DIR}
+                        source ${PYTHON_VENV_DIR}/bin/activate
                         pip install pre-commit
                         pre-commit install
                     '''
@@ -54,68 +55,67 @@ pipeline {
         stage('JUnit/Mockito Tests') {
             steps {
                 echo 'Exécution des tests unitaires...'
-            }
-        }
-
-        stage('JaCoCo Report') {
-            steps {
-                echo 'Génération du rapport JaCoCo...'
-            }
-        }
-
-        stage('JaCoCo coverage report') {
-            steps {
-                echo 'Analyse de la couverture JaCoCo...'
+                // Remplace par la commande réelle pour les tests
             }
         }
 
         stage('Scan: SonarQube') {
             steps {
-                echo 'Exécution de l’analyse SonarQube...'
+                echo 'Scan du projet avec SonarQube...'
+                // Ajoute les étapes pour l'intégration SonarQube ici
             }
         }
 
         stage('Security Scan: Trufflehog') {
             steps {
-                echo 'Exécution du scan Trufflehog...'
-            }
-        }
-
-        stage('Security Scan: OWASP Dependency-Check') {
-            steps {
-                echo 'Exécution du scan OWASP Dependency-Check...'
-            }
-        }
-
-        stage('Deploy to Nexus') {
-            steps {
-                echo 'Déploiement vers Nexus...'
+                echo 'Scan de sécurité avec Trufflehog...'
+                // Ajoute les étapes de Trufflehog ici
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo 'Construction de l’image Docker...'
+                script {
+                    echo "Build de l'image Docker..."
+                    sh '''
+                        docker build -t ${DOCKER_IMAGE_NAME} .
+                    '''
+                }
             }
         }
 
         stage('Push Docker Image to DockerHub') {
             steps {
-                echo 'Push de l’image Docker vers DockerHub...'
+                script {
+                    echo "Push de l'image Docker sur DockerHub..."
+                    sh '''
+                        docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+                        docker push ${DOCKER_HUB_REPO}:${DOCKER_IMAGE_NAME}
+                    '''
+                }
             }
         }
 
         stage('Run Docker Compose') {
             steps {
                 echo 'Exécution de Docker Compose...'
+                sh '''
+                    docker-compose up -d
+                '''
             }
         }
 
-        stage('Declarative: Post Actions') {
+        stage('Deploy to Nexus') {
             steps {
-                mail to: 'aminedridia9@gmail.com',
-                     subject: "Build ${currentBuild.fullDisplayName} - ${currentBuild.result}",
-                     body: "Le résultat du build est ${currentBuild.result}."
+                echo 'Déploiement sur Nexus...'
+                // Ajoute les étapes de déploiement Nexus ici
+            }
+        }
+
+        stage('Post Actions') {
+            steps {
+                echo 'Exécution des actions post-build...'
+                // Ajoute les actions après le build ici
             }
         }
     }
@@ -124,11 +124,9 @@ pipeline {
         always {
             echo 'Pipeline terminé.'
         }
-
         success {
             echo 'Le build a réussi.'
         }
-
         failure {
             echo 'Le build a échoué.'
         }
