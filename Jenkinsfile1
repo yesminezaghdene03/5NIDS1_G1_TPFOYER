@@ -3,11 +3,10 @@ pipeline {
 
     tools {
         jdk 'JAVA_HOME'
-        maven 'M2_Home'
+        maven 'M2_Home' // Utilisation du nom configuré pour Maven dans Jenkins
     }
 
     stages {
-        // Étape GIT : Récupérer le code depuis le dépôt
         stage('GIT') {
             steps {
                 git branch: 'AmineDridia_5NIDS1_G1',
@@ -15,7 +14,14 @@ pipeline {
             }
         }
 
-        // Étape de pré-commit : Installation et exécution des hooks de sécurité
+        stage('Install Python3 Venv') {
+            steps {
+                script {
+                    sh 'sudo apt-get update && sudo apt-get install -y python3.10-venv'
+                }
+            }
+        }
+
         stage('Pre-commit Security Hooks') {
             steps {
                 script {
@@ -35,28 +41,24 @@ pipeline {
             }
         }
 
-        // Étape de compilation avec Maven
         stage('Compile') {
             steps {
                 sh 'mvn clean compile'
             }
         }
 
-        // Étape des tests unitaires : JUnit/Mockito
         stage('JUnit/Mockito Tests') {
             steps {
                 sh 'mvn test'
             }
         }
 
-        // Analyse de la couverture du code avec JaCoCo
         stage('JaCoCo Report') {
             steps {
                 sh 'mvn jacoco:report'
             }
         }
 
-        // Publication du rapport JaCoCo
         stage('JaCoCo coverage report') {
             steps {
                 step([$class: 'JacocoPublisher',
@@ -68,7 +70,6 @@ pipeline {
             }
         }
 
-        // Analyse de la qualité du code avec SonarQube
         stage('Scan: SonarQube') {
             steps {
                 withSonarQubeEnv('sq1') {
@@ -77,51 +78,37 @@ pipeline {
             }
         }
 
-        // Étape de sécurité : Scan avec Trufflehog pour détecter les secrets dans le code
         stage('Security Scan: Trufflehog') {
             steps {
                 script {
-                    echo "Démarrage du scan de sécurité Trufflehog..."
-                    sh 'trufflehog filesystem --directory . --json'
+                    sh 'trufflehog --json --regex --rules trufflehog-rules.json https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER'
                 }
             }
         }
 
-        // Étape de sécurité : Scan des dépendances avec OWASP Dependency-Check
         stage('Security Scan: OWASP Dependency-Check') {
             steps {
                 script {
-                    echo "Démarrage du scan OWASP Dependency-Check..."
                     sh 'mvn org.owasp:dependency-check-maven:check'
                 }
             }
         }
 
-        // Déploiement de l'application sur Nexus
-        stage('Deploy to Nexus') {
-            steps {
-                sh 'mvn deploy -DskipTests -DaltDeploymentRepository=deploymentRepo::default::http://192.168.33.10:8081/repository/maven-releases/'
-            }
-        }
-
-        // Création de l'image Docker
         stage('Build Docker Image') {
             steps {
                 sh 'sudo docker build -t aminedridia/tp-foyer:5.0.0 .'
             }
         }
 
-        // Push de l'image Docker vers DockerHub
         stage('Push Docker Image to DockerHub') {
             steps {
                 sh '''
-                    sudo docker login -u aminedridia -p adminamine
+                    sudo docker login -u aminedridia -p adminamine 
                     sudo docker push aminedridia/tp-foyer:5.0.0
                 '''
             }
         }
 
-        // Exécution de Docker Compose
         stage('Run Docker Compose') {
             steps {
                 script {
