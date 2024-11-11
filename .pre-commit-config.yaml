@@ -2,20 +2,16 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
-      - id: trailing-whitespace
-      - id: end-of-file-fixer
-      - id: check-yaml
+      - id: trailing-whitespace #checks for and removes any trailing whitespace from lines in your code.
+      - id: end-of-file-fixer # Ensures that every file ends with exactly one newline
+      - id: check-yaml #Verifies that any .yaml files in the code are properly formatted and error-free
 
   - repo: https://github.com/hmrc/security-git-hooks
-    rev: release/1.11.0  # Assurez-vous que c'est la version souhaitée
+    rev: release/1.11.0
     hooks:
-      - id: secrets_filecontent
+      - id: secrets_filecontent #Scans staged files for potentially sensitive content (like passwords, tokens, or API keys).
         name: Checking staged files for sensitive content
         exclude: ".tar$|.gz$|.jar$|.7z$|.rar$|.bz2$|.zip$|.gzip$|.war$|.ear$|.xlsx$|.xls$|.docx$|.doc$|.pptx$|.pdf$|.jpg$|.png$|.jpeg$|.tif$|.tiff$|.gif$|.bmp$|.webp$|.svg$|.ico$|.psd$|.exe$|.dll$|.dmg$|.de$|.rpm$"
-      # Excluez le hook suivant qui échoue
-      # - id: secrets_filename
-      #   name: Checking staged files for sensitive file types
-      #   exclude: ".tar$|.gz$|.jar$|.7z$|.rar$|.bz2$|.zip$|.gzip$|.war$|.ear$|.xlsx$|.xls$|.docx$|.doc$|.pptx$|.pdf$|.jpg$|.png$|.jpeg$|.tif$|.tiff$|.gif$|.bmp$|.webp$|.svg$|.ico$|.psd$|.exe$|.dll$|.dmg$|.de$|.rpm$"
-      - id: hooks_version_check
+      - id: hooks_version_check # checks the versions of local hooks against the latest release versions to ensure they’re up-to-dat
         name: Checking local hooks against latest release
         verbose: true
