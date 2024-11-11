@@ -2,24 +2,28 @@ pipeline {
     agent any
 
     environment {
-        NEXUS_URL = 'http://192.168.33.10:8081' // Remplacer par ton URL Nexus
-        NEXUS_REPO = 'maven-releases' // Remplacer par ton nom de dépôt Nexus
+        NEXUS_URL = 'http://192.168.33.10:8081' // Remplace par ton URL Nexus
+        NEXUS_REPO = 'maven-releases' // Remplace par ton dépôt Nexus
     }
 
     stages {
 
-        // Phase Pre-Commit
+        // Phase Pré-Commit
         stage('Pre-Commit: Code Linting') {
             steps {
-                echo 'Exécution du Linting'
-                sh 'mvn clean install -Dcheckstyle.skip=true'  // Linting Java avec Checkstyle
+                echo 'Exécution de Linting'
+                sh 'mvn clean install -Dcheckstyle.skip=true'  // Java Checkstyle pour linting
             }
         }
 
         stage('Pre-Commit: Secrets Scanning') {
             steps {
-                echo 'Scan des Secrets'
-                sh 'trufflehog filesystem --directory . --json' // Scan des secrets avec Trufflehog
+                echo 'Scan des Secrets avec Trufflehog'
+                sh '''
+                    # Installer Trufflehog
+                    pip install trufflehog
+                    trufflehog filesystem --directory . --json
+                '''
             }
         }
 
@@ -53,7 +57,7 @@ pipeline {
 
         stage('Acceptance: Analyse de la Qualité du Code') {
             steps {
-                echo 'Analyse SonarQube'
+                echo 'Exécution de l\'Analyse SonarQube'
                 withSonarQubeEnv(installationName: 'sq1') {
                     sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:4.0.0.4121:sonar'
                 }
@@ -62,8 +66,8 @@ pipeline {
 
         stage('Acceptance: Scan des Dépendances') {
             steps {
-                echo 'Scan des Dépendances'
-                sh 'mvn org.owasp:dependency-check-maven:check' // Scan des dépendances avec OWASP Dependency-Check
+                echo 'Exécution du Scan des Dépendances'
+                sh 'mvn org.owasp:dependency-check-maven:check' // OWASP Dependency-Check
             }
         }
 
@@ -75,18 +79,18 @@ pipeline {
 
         stage('Acceptance: Tests de Sécurité') {
             steps {
-                echo 'Exécution de l’analyse SAST'
-                sh 'bandit -r .' // Exemple : Bandit pour Python (remplacer par l’outil adapté à ton langage)
+                echo 'Exécution des Tests de Sécurité'
+                sh 'bandit -r .' // Exemple : Bandit pour Python (remplace par l'outil adapté à ton langage)
             }
         }
 
-        stage('Déploiement vers Nexus') {
+        stage('Deploy to Nexus') {
             steps {
                 echo 'Déploiement vers Nexus'
 
                 script {
                     if (!fileExists('target/tp-foyer-5.0.0.jar')) {
-                        error("Le fichier JAR n'existe pas : target/tp-foyer-5.0.0.jar.original")
+                        error("Le fichier JAR n'existe pas: target/tp-foyer-5.0.0.jar.original")
                     }
                 }
 
@@ -107,7 +111,7 @@ pipeline {
             }
         }
 
-        // Phase des Opérations en Production
+        // Phase Operations en Production
         stage('Création de l\'Image Docker') {
             steps {
                 echo 'Création de l\'Image Docker'
@@ -117,8 +121,8 @@ pipeline {
 
         stage('Scan des Vulnérabilités de l\'Image Docker') {
             steps {
-                echo 'Scan des vulnérabilités de l\'Image Docker'
-                sh 'trivy image wassimbhs/tp-foyer:1.0.0' // Scan de l’image avec Trivy
+                echo 'Scan de l\'Image Docker pour les Vulnérabilités'
+                sh 'trivy image wassimbhs/tp-foyer:1.0.0' // Scan de l'image avec Trivy
             }
         }
 
@@ -136,28 +140,21 @@ pipeline {
 
         stage('Déploiement avec Docker Compose') {
             steps {
-                echo 'Démarrage du Backend + DB avec Docker Compose'
-                sh 'docker-compose up -d'
+                echo 'Démarrage Backend + DB avec Docker Compose'
+                sh 'docker compose up -d'
             }
         }
     }
 
     post {
         always {
-            cleanWs() // Nettoyage du workspace après le build
+            cleanWs() // Nettoyer l'espace de travail après le build
         }
 
         failure {
             mail to: 'aminedridia9@gmail.com',
-                 subject: "Échec du Build: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                 body: "Le job '${env.JOB_NAME}' a échoué à la build #${env.BUILD_NUMBER}. Veuillez vérifier les logs pour plus de détails."
-        }
-
-        success {
-            echo 'Build et déploiement réussis !'
-            mail to: 'aminedridia9@gmail.com',
-                 subject: "Succès du Build - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                 body: "Le build a réussi ! Consultez les détails à ${env.BUILD_URL}"
+                 subject: "Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                 body: "Le job de build '${env.JOB_NAME}' a échoué lors du build #${env.BUILD_NUMBER}. Veuillez consulter les logs pour plus de détails."
         }
     }
 }
