@@ -30,7 +30,7 @@ pipeline {
             }
         }
 
-        stage ('SonarQube Analysis') {
+       /* stage ('SonarQube Analysis') {
             steps {
                 script {
                     withSonarQubeEnv(credentialsId: 'sonar-api-key') {
@@ -45,7 +45,7 @@ pipeline {
                     waitForQualityGate abortPipeline: false, credentialsId: 'sonar-api-key'
                 }
             }
-        }
+        } */
         stage ('Nexus') {
             steps {
                 script {
@@ -72,66 +72,11 @@ pipeline {
                 }
             }
         }
-        stage('Docker Image  Build'){
-            steps {
-                script {
-                    sh 'docker image build -t $JOB_NAME:v1.$BUILD_ID .'
-                    sh 'docker image tag $JOB_NAME:v1.$BUILD_ID omranihadhemi/$JOB_NAME:v1.$BUILD_ID'
-                    sh 'docker image tag $JOB_NAME:v1.$BUILD_ID omranihadhemi/$JOB_NAME:latest'
 
-                }
-            }
-        }
-        stage ('Docker Hub'){
-            steps{
-                script{
-                    withCredentials([string(credentialsId: 'dockerhub_pwd', variable: 'docker_hub_cred')]) {
-                        sh 'docker login -u omranihadhemi -p ${docker_hub_cred}'
-                        sh 'docker image push omranihadhemi/$JOB_NAME:v1.$BUILD_ID '
-                        sh 'docker image push omranihadhemi/$JOB_NAME:latest '
-    
-                 }
 
-                }
-            }
 
-        }
-        stage('Docker Compose Down') {
-            steps {
-                script {
-                    sh 'docker compose down'
-                }
-            }
-        }
-        stage('Docker Compose Up') {
-            steps{
-                script{
-                    sh 'docker compose up -d'
-                }
-            }
-        }
-        stage('Prometheus'){
-            steps{
-                script{
-                    sh 'docker start prometheus'
-                }
-            }
-        }
-        stage('Grafana'){
-            steps{
-                script{
-                    sh 'docker start grafana'
-                }
-            }
-        }
-        stage('Cleanup Old Docker Images') {
-            steps {
-                script {
-                    
-                    sh 'docker image prune -f'
-                }
-            }
-        }
+
+
 
     }
     post {
