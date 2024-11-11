@@ -13,7 +13,7 @@ pipeline {
     stages {
         stage('SCM Checkout') {
             steps {
-                // Cloner le dépôt et se placer sur la branche EmnaBelkhiria_NIDS1_G1
+
                 git branch: 'EmnaBelkhiria_NIDS1_G1', url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
             }
         }
@@ -33,6 +33,19 @@ pipeline {
         stage('Package') {
             steps {
                 sh 'mvn package'
+            }
+        }
+
+        stage('Security Scan - Nmap') {
+            steps {
+                script {
+
+                    sh 'docker run --rm -v $(pwd):/workspace -w /workspace instrumentisto/nmap -p 1-65535 <your_target_ip> -oN nmap_report.txt'
+
+
+                    archiveArtifacts artifacts: 'nmap_report.txt', allowEmptyArchive: true
+                    sh 'cat nmap_report.txt'
+                }
             }
         }
 
@@ -75,10 +88,52 @@ pipeline {
             }
         }
 
+        stage('Nmap Open Port Verification') {
+            steps {
+                script {
+                    sleep(time: 5, unit: 'MINUTES')
+
+                    def containerIP = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' CONTAINER", returnStdout: true).trim()
+
+
+                    if (!containerIP) {
+                        error("Failed to resolve container IP address.")
+                    }
+
+                    def allowedPort = 8089
+                    // Exécuter nmap et sauvegarder le résultat
+                    def nmapOutput = sh(script: "nmap -p- ${containerIP}", returnStdout: true).trim()
+                    echo "Raw Nmap scan output:\n${nmapOutput}"
+
+
+                    def openPorts = []
+                    def lines = nmapOutput.split('\n')
+                    for (int i = 0; i < lines.size(); i++) {
+                        def line = lines[i].trim()
+                        if (line.contains("open")) {
+                            def parts = line.split("\\s+")
+                            if (parts.length > 0) {
+                                def portInfo = parts[0]
+                                def portNumber = portInfo.split("/")[0]
+                                echo "Found open port: ${portNumber}"
+                                openPorts.add(portNumber as Integer)
+                            }
+                        }
+                    }
+                    echo "Open ports: ${openPorts.join(', ')}"
+                    if (openPorts.size() != 1 || openPorts[0] != allowedPort) {
+                        error("Build failed: Ports other than ${allowedPort} are open.")
+                    } else {
+                        echo "Only port ${allowedPort} is open. Proceeding with the build."
+                    }
+                }
+            }
+        }
+
         stage('Docker Bench Security Check') {
             steps {
                 script {
-                    // Exécuter Docker Bench et générer un rapport
+
                     sh 'docker run --rm -v /var/run/docker.sock:/var/run/docker.sock --security-opt seccomp=unconfined --name docker-bench -v $PWD:/tmp docker/docker-bench-security > docker-bench-report.txt'
                 }
             }
