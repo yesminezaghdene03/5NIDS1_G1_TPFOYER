@@ -3,7 +3,7 @@ pipeline {
 
     tools {
         git 'Default' // Assurez-vous que 'Default' correspond à l'installation Git configurée dans Jenkins
-        maven 'M2_HOME' // Vérifiez que 'M2_HOME' correspond à l'installation Maven configurée dans Jenkins
+        maven 'M2_Home' // Vérifiez que 'M2_HOME' correspond à l'installation Maven configurée dans Jenkins
         jdk 'JDK 17' // Assurez-vous que 'JDK 17' correspond à l'installation JDK 17 configurée dans Jenkins
     }
 
