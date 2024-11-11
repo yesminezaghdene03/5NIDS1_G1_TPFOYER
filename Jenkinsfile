@@ -61,4 +61,18 @@ pipeline {
             }
         }
     }
-} 
+
+    post {
+        success {
+            echo 'Build and deployment successful!'
+            mail to: 'aminedridia9@gmail.com',
+                 subject: "Build Success - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                 body: "The build was successful! Check the details at ${env.BUILD_URL}"
+        }
+        failure {
+            mail to: 'aminedridia9@gmail.com',
+                 subject: "Build Failure - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                 body: "The build failed. Please check the details at ${env.BUILD_URL}"
+        }
+    }
+}
