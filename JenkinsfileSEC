@@ -31,25 +31,7 @@ pipeline {
             }
         }
 
-        /* stage ('SonarQube Analysis') {
-            steps {
-                script {
-                    withSonarQubeEnv(credentialsId: 'sonar-api-key') {
-                        sh 'mvn clean package sonar:sonar'
-                    }
-                }
-            }
-        }
-        stage ('Quality Gate Status') {
-            steps {
-                script {
-                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-api-key'
-                }
-            }
-        } */
-        
-        // Ajouter les étapes OWASP Dependency-Check après SonarQube
-        stage('OWASP Dependency-Check') {
+        stage ('OWASP Dependency-Check') {
             steps {
                 script {
                     dependencyCheck additionalArguments: '--scan .', odcInstallation: 'DP-check'
@@ -98,13 +80,24 @@ pipeline {
                 }
             }
         }
-
         stage('Docker Image Build') {
             steps {
                 script {
-                    sh 'docker image build -t $JOB_NAME:v1.$BUILD_ID .'
-                    sh 'docker image tag $JOB_NAME:v1.$BUILD_ID omranihadhemi/$JOB_NAME:v1.$BUILD_ID'
-                    sh 'docker image tag $JOB_NAME:v1.$BUILD_ID omranihadhemi/$JOB_NAME:latest'
+                    sh 'docker image build -t tp_foyer_devsecops:v1.$BUILD_ID .' // using lowercase
+                    sh 'docker image tag tp_foyer_devsecops:v1.$BUILD_ID omranihadhemi/tp_foyer_devsecops:v1.$BUILD_ID'
+                    sh 'docker image tag tp_foyer_devsecops:v1.$BUILD_ID omranihadhemi/tp_foyer_devsecops:latest'
+                }
+            }
+        }
+
+        // Ajouter l'étape Trivy pour scanner les images Docker
+        stage('Trivy Scan') {
+            steps {
+                script {
+                    // Utiliser l'image Docker officielle de Trivy pour scanner l'image Docker construite
+                    sh '''
+                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd):/mnt aquasec/trivy --no-progress --exit-code 1 --severity HIGH,CRITICAL omranihadhemi/$JOB_NAME:v1.$BUILD_ID
+                    '''
                 }
             }
         }
@@ -124,7 +117,6 @@ pipeline {
         stage('Docker Compose Down') {
             steps {
                 script {
-                    // Arrête et supprime les conteneurs du service défini dans docker-compose.yml
                     sh 'docker compose down'
                 }
             }
@@ -157,7 +149,6 @@ pipeline {
         stage('Cleanup Old Docker Images') {
             steps {
                 script {
-                    // Supprime les images inutilisées
                     sh 'docker image prune -f'
                 }
             }
