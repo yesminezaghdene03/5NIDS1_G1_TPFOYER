@@ -1,79 +1,163 @@
-
 pipeline {
     agent any
 
+    environment {
+        NEXUS_URL = 'http://192.168.33.10:8081' // Remplacer par ton URL Nexus
+        NEXUS_REPO = 'maven-releases' // Remplacer par ton nom de dépôt Nexus
+    }
+
     stages {
-        stage('GIT') {
+
+        // Phase Pre-Commit
+        stage('Pre-Commit: Code Linting') {
             steps {
-                git branch: 'AmineDridia_5NIDS1_G1',
-                    url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER'
+                echo 'Exécution du Linting'
+                sh 'mvn clean install -Dcheckstyle.skip=true'  // Linting Java avec Checkstyle
             }
         }
 
-        /* 
-        stage('Build') {
+        stage('Pre-Commit: Secrets Scanning') {
             steps {
-                sh 'mvn clean compile' // Étape de compilation
+                echo 'Scan des Secrets'
+                sh 'trufflehog filesystem --directory . --json' // Scan des secrets avec Trufflehog
             }
         }
-        */
 
-        /* 
-        stage('Scan') {
+        // Phase Commit
+        stage('Commit: Clone du Repository') {
             steps {
-                withSonarQubeEnv('sq1') {
-                    sh 'mvn sonar:sonar' // Analyse SonarQube avec les classes compilées
+                echo 'Clonage du Repository'
+                git url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git', branch: 'WassimBELHAJSALEM-5NIDS1-G1'
+            }
+        }
+
+        stage('Commit: Clean') {
+            steps {
+                sh 'mvn clean'
+            }
+        }
+
+        stage('Commit: Compilation avec Maven') {
+            steps {
+                sh 'mvn compile'
+            }
+        }
+
+        // Phase Acceptance
+        stage('Acceptance: Tests Unitaires') {
+            steps {
+                echo 'Exécution des Tests Unitaires'
+                sh 'mvn test'
+            }
+        }
+
+        stage('Acceptance: Analyse de la Qualité du Code') {
+            steps {
+                echo 'Analyse SonarQube'
+                withSonarQubeEnv(installationName: 'sq1') {
+                    sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:4.0.0.4121:sonar'
                 }
             }
         }
-        */
 
-        /* 
-        stage('Deploy to Nexus') {
+        stage('Acceptance: Scan des Dépendances') {
             steps {
-                sh 'mvn deploy -DskipTests -DaltDeploymentRepository=deploymentRepo::default::http://192.168.33.10:8081/repository/maven-releases/'
-            }
-        }
-        */
-
-        stage('Build Docker Image') {
-            steps {
-                sh 'sudo docker build -t aminedridia/tp-foyer:5.0.0 .'
+                echo 'Scan des Dépendances'
+                sh 'mvn org.owasp:dependency-check-maven:check' // Scan des dépendances avec OWASP Dependency-Check
             }
         }
 
-        stage('Push Docker Image to DockerHub') {
+        stage('Acceptance: Packaging sans Tests') {
             steps {
-                sh '''
-                    sudo docker login -u aminedridia -p adminamine 
-                    sudo docker push aminedridia/tp-foyer:5.0.0
-                '''
+                sh 'mvn package -DskipTests'
             }
         }
 
-        stage('Run Docker Compose') {
+        stage('Acceptance: Tests de Sécurité') {
             steps {
+                echo 'Exécution de l’analyse SAST'
+                sh 'bandit -r .' // Exemple : Bandit pour Python (remplacer par l’outil adapté à ton langage)
+            }
+        }
+
+        stage('Déploiement vers Nexus') {
+            steps {
+                echo 'Déploiement vers Nexus'
+
                 script {
-                    sh '''
-                        sudo docker-compose down 
-                        sudo docker-compose up -d
-                    '''
+                    if (!fileExists('target/tp-foyer-5.0.0.jar')) {
+                        error("Le fichier JAR n'existe pas : target/tp-foyer-5.0.0.jar.original")
+                    }
                 }
+
+                withCredentials([usernamePassword(credentialsId: 'nexusCredential', usernameVariable: 'NEXUS_USERNAME', passwordVariable: 'NEXUS_PASSWORD')]) {
+                    sh """
+                    mvn -s /usr/share/maven/conf/settings.xml deploy:deploy-file \
+                      -DgroupId=com.example \
+                      -DartifactId=tp-foyer \
+                      -Dversion=5.0.0 \
+                      -Dpackaging=jar \
+                      -Dfile=target/tp-foyer-5.0.0.jar \
+                      -DrepositoryId=deploymentRepo \
+                      -Durl=$NEXUS_URL/repository/$NEXUS_REPO/ \
+                      -Dusername=$NEXUS_USERNAME \
+                      -Dpassword=$NEXUS_PASSWORD
+                    """
+                }
+            }
+        }
+
+        // Phase des Opérations en Production
+        stage('Création de l\'Image Docker') {
+            steps {
+                echo 'Création de l\'Image Docker'
+                sh 'docker build -t wassimbhs/tp-foyer:1.0.0 .'
+            }
+        }
+
+        stage('Scan des Vulnérabilités de l\'Image Docker') {
+            steps {
+                echo 'Scan des vulnérabilités de l\'Image Docker'
+                sh 'trivy image wassimbhs/tp-foyer:1.0.0' // Scan de l’image avec Trivy
+            }
+        }
+
+        stage('Push de l\'Image vers Dockerhub') {
+            steps {
+                echo 'Push de l\'Image vers Dockerhub'
+                withCredentials([usernamePassword(credentialsId: 'dockerhubCredential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    sh """
+                    echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+                    docker push "$DOCKER_USERNAME/tp-foyer:1.0.0"
+                    """
+                }
+            }
+        }
+
+        stage('Déploiement avec Docker Compose') {
+            steps {
+                echo 'Démarrage du Backend + DB avec Docker Compose'
+                sh 'docker-compose up -d'
             }
         }
     }
 
     post {
-        success {
-            echo 'Build and deployment successful!'
-            mail to: 'aminedridia9@gmail.com',
-                 subject: "Build Success - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                 body: "The build was successful! Check the details at ${env.BUILD_URL}"
+        always {
+            cleanWs() // Nettoyage du workspace après le build
         }
+
         failure {
             mail to: 'aminedridia9@gmail.com',
-                 subject: "Build Failure - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                 body: "The build failed. Please check the details at ${env.BUILD_URL}"
+                 subject: "Échec du Build: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                 body: "Le job '${env.JOB_NAME}' a échoué à la build #${env.BUILD_NUMBER}. Veuillez vérifier les logs pour plus de détails."
+        }
+
+        success {
+            echo 'Build et déploiement réussis !'
+            mail to: 'aminedridia9@gmail.com',
+                 subject: "Succès du Build - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                 body: "Le build a réussi ! Consultez les détails à ${env.BUILD_URL}"
         }
     }
 }
