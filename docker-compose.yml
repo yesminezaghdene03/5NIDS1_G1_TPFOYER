@@ -24,7 +24,7 @@ services:
         condition: service_healthy
     restart: on-failure
     ports:
-      - 8091:8091
+      - 8089:8089
     environment:
       SPRING_APPLICATION_JSON: >-
         {
