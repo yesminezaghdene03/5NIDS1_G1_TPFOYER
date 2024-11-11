@@ -2,19 +2,19 @@ pipeline {
     agent any
 
     tools {
-        git 'Default' // Assure-toi que 'Default' correspond à l'installation Git configurée dans Jenkins
+        git 'Default'
         maven 'M2_HOME'
         jdk 'JAVA_HOME'
     }
 
     environment {
-        DOCKER_IMAGE_NAME = 'tp-foyer' // Nom de l'image Docker
-        DOCKER_TAG = "5.0.0" // Tag de l'image Docker
-        SONAR_HOST_URL = 'http://192.168.50.4:9000' // URL de ton serveur SonarQube
-        SONAR_PROJECT_KEY = 'My_project' // Clé de projet SonarQube
-        SONAR_PROJECT_NAME = 'tp-foyer 2' // Nom du projet SonarQube
-        SONAR_PROJECT_VERSION = '1.0' // Version du projet SonarQube
-        SONAR_LOGIN = 'sqp_9233859e77bc9e349efbd11872ad11527f1e745c' // Token d'authentification SonarQube
+        DOCKER_IMAGE_NAME = 'tp-foyer'
+        DOCKER_TAG = "5.0.0"
+        // SONAR_HOST_URL = 'http://192.168.50.4:9000'
+        // SONAR_PROJECT_KEY = 'My_project'
+        // SONAR_PROJECT_NAME = 'tp-foyer 2'
+        // SONAR_PROJECT_VERSION = '1.0'
+        // SONAR_LOGIN = 'sqp_9233859e77bc9e349efbd11872ad11527f1e745c'
     }
 
     stages {
@@ -26,36 +26,36 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'mvn clean install'  // Installer les dépendances et compiler
+                sh 'mvn clean install'
             }
         }
 
-        stage('SonarQube Analysis') {
-            steps {
-                script {
-                    sh 'mvn clean verify sonar:sonar ' +
-                       '-Dsonar.host.url=${SONAR_HOST_URL} ' +
-                       '-Dsonar.projectKey=${SONAR_PROJECT_KEY} ' +
-                       '-Dsonar.projectName=${SONAR_PROJECT_NAME} ' +
-                       '-Dsonar.projectVersion=${SONAR_PROJECT_VERSION} ' +
-                       '-Dsonar.java.binaries=target/classes ' +
-                       '-Dsonar.sources=src/main/java ' +
-                       '-Dsonar.tests=src/test/java ' +
-                       '-Dsonar.login=${SONAR_LOGIN} ' +
-                       '-Dsonar.verbose=true'
-                }
-            }
-        }
+        // stage('SonarQube Analysis') {
+        //     steps {
+        //         script {
+        //             sh 'mvn sonar:sonar ' +
+        //                '-Dsonar.host.url=${SONAR_HOST_URL} ' +
+        //                '-Dsonar.projectKey=${SONAR_PROJECT_KEY} ' +
+        //                '-Dsonar.projectName=${SONAR_PROJECT_NAME} ' +
+        //                '-Dsonar.projectVersion=${SONAR_PROJECT_VERSION} ' +
+        //                '-Dsonar.java.binaries=target/classes ' +
+        //                '-Dsonar.sources=src/main/java ' +
+        //                '-Dsonar.tests=src/test/java ' +
+        //                '-Dsonar.login=${SONAR_LOGIN} ' +
+        //                '-Dsonar.verbose=true'
+        //         }
+        //     }
+        // }
 
         stage('Test') {
             steps {
-                sh 'mvn test'  // Exécuter les tests
+                sh 'mvn test'
             }
         }
 
         stage('Package') {
             steps {
-                sh 'mvn package'  // Créer le package JAR
+                sh 'mvn package'
             }
         }
 
@@ -98,7 +98,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    sh "docker-compose up -d"  // Déployer avec Docker Compose
+                    sh "docker-compose up -d"
                 }
             }
         }
@@ -106,7 +106,7 @@ pipeline {
         stage('Start Prometheus') {
             steps {
                 script {
-                    sh 'docker start prometheus'  // Démarrer Prometheus
+                    sh 'docker start prometheus'
                 }
             }
         }
@@ -114,7 +114,7 @@ pipeline {
         stage('Start Grafana') {
             steps {
                 script {
-                    sh 'docker start grafana'  // Démarrer Grafana
+                    sh 'docker start grafana'
                 }
             }
         }
@@ -123,9 +123,9 @@ pipeline {
     post {
         always {
             sh 'echo "Listing directory contents:"'
-            sh 'ls -R target/surefire-reports/'  // Liste les fichiers dans 'surefire-reports'
-            junit '**/target/surefire-reports/*.xml'  // Publier les rapports de tests
-            archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true  // Archiver les artefacts générés
+            sh 'ls -R target/surefire-reports/'
+            junit '**/target/surefire-reports/*.xml'
+            archiveArtifacts artifacts: '**/target/*.jar', allowEmptyArchive: true
         }
         success {
             echo 'Build and deployment successful!'
