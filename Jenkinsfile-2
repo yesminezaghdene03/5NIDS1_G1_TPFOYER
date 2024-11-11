@@ -2,159 +2,170 @@ pipeline {
     agent any
 
     environment {
+
         NEXUS_URL = 'http://192.168.33.10:8081' // Replace with your Nexus URL
         NEXUS_REPO = 'maven-releases' // Replace with your Nexus repository name
+
+
     }
 
-
-
     stages {
-
-        // Pre-Commit Phase
-        stage('Pre-Commit: Code Linting') {
-            steps {
-                echo 'Running Linting'
-                sh 'mvn clean install -Dcheckstyle.skip=true'  // Java Checkstyle for linting
-            }
-        }
-
-        stage('Pre-Commit: Secrets Scanning') {
-            steps {
-                echo 'Scanning for Secrets'
-                sh 'trufflehog filesystem --directory . --json' // Secrets scanning with Trufflehog
-            }
-        }
-
-        // Commit Phase
         stage('Hello') {
             steps {
                 echo 'Hello World'
             }
         }
 
-        stage('Commit: Clone Repository') {
+        stage('Clone Repository') {
             steps {
                 echo 'Pulling Repository'
                 git url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git', branch: 'WassimBELHAJSALEM-5NIDS1-G1'
             }
         }
 
-        stage('Commit: Clean') {
+        stage('Pre-Commit Checks') {
+            steps {
+                echo 'Running Secrets Detection'
+                sh 'gitleaks detect --source . || true'  // Runs GitLeaks to detect secrets
+            }
+        }
+
+        stage('Clean') {
             steps {
                 sh 'mvn clean'
             }
         }
 
-        stage('Commit: Compile with Maven') {
+        stage('Compile with Maven') {
             steps {
                 sh 'mvn compile'
             }
         }
 
-        // Acceptance Phase
-        stage('Acceptance: Unit Tests') {
-            steps {
-                echo 'Running Unit Tests'
-                sh 'mvn test'
-            }
-        }
-
-        stage('Acceptance: Code Quality Analysis') {
-            steps {
-                echo 'Running SonarQube Analysis'
-                withSonarQubeEnv(installationName: 'sq1') {
-                    sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:4.0.0.4121:sonar'
-                }
-            }
-        }
-
-        stage('Acceptance: Dependency Scanning') {
-            steps {
-                echo 'Running Dependency Scanning'
-                sh 'mvn org.owasp:dependency-check-maven:check' // OWASP Dependency-Check
-            }
-        }
-
-        stage('Acceptance: Package without Tests') {
+        stage('Package without Tests') {
             steps {
                 sh 'mvn package -DskipTests'
             }
         }
 
-        stage('Acceptance: Security Testing') {
+        stage('SonarQube Analysis') {
             steps {
-                echo 'Running SAST Analysis'
-                sh 'bandit -r .' // Example: Bandit for Python (replace with your language’s tool)
+                echo 'Running SonarQube Analysis'
+                // Run SonarQube analysis with specified project key, host URL, and token
+
+                      withSonarQubeEnv(installationName: 'sq1') {
+
+                             sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:4.0.0.4121:sonar'
+                           }
+            }
+        }
+
+        stage('Dependency Security Scan') {
+            steps {
+                echo 'Running Dependency Check'
+                sh 'mvn org.owasp:dependency-check-maven:check'  // Scans dependencies for known vulnerabilities
             }
         }
 
         stage('Deploy to Nexus') {
-            steps {
-                echo 'Deploying to Nexus'
+    steps {
+        echo 'Deploying to Nexus'
 
-                script {
-                    if (!fileExists('target/tp-foyer-5.0.0.jar')) {
-                        error("The JAR file does not exist: target/tp-foyer-5.0.0.jar.original")
-                    }
-                }
-
-                withCredentials([usernamePassword(credentialsId: 'nexusCredential', usernameVariable: 'NEXUS_USERNAME', passwordVariable: 'NEXUS_PASSWORD')]) {
-                    sh """
-                    mvn -s /usr/share/maven/conf/settings.xml deploy:deploy-file \
-                      -DgroupId=com.example \
-                      -DartifactId=tp-foyer \
-                      -Dversion=5.0.0 \
-                      -Dpackaging=jar \
-                      -Dfile=target/tp-foyer-5.0.0.jar \
-                      -DrepositoryId=deploymentRepo \
-                      -Durl=$NEXUS_URL/repository/$NEXUS_REPO/ \
-                      -Dusername=$NEXUS_USERNAME \
-                      -Dpassword=$NEXUS_PASSWORD
-                    """
-                }
+        // Check if the JAR file exists
+        script {
+            if (!fileExists('target/tp-foyer-5.0.0.jar')) {
+                error("The JAR file does not exist: target/tp-foyer-5.0.0.jar.original")
             }
         }
 
-        // Production Operations Phase
-        stage('Image Creation') {
+        // Deploy the file to Nexus
+        withCredentials([usernamePassword(credentialsId: 'nexusCredential', usernameVariable: 'NEXUS_USERNAME', passwordVariable: 'NEXUS_PASSWORD')]) {
+        sh """
+        mvn -s /usr/share/maven/conf/settings.xml deploy:deploy-file \
+          -DgroupId=com.example \
+          -DartifactId=tp-foyer \
+          -Dversion=5.0.0 \
+          -Dpackaging=jar \
+          -Dfile=target/tp-foyer-5.0.0.jar \
+          -DrepositoryId=deploymentRepo \
+          -Durl=$NEXUS_URL/repository/$NEXUS_REPO/ \
+          -Dusername=$NEXUS_USERNAME \
+          -Dpassword=$NEXUS_PASSWORD
+        """
+        }
+    }
+}
+
+        stage('Image') {
             steps {
                 echo 'Creating Docker Image'
                 sh 'docker build -t wassimbhs/tp-foyer:1.0.0 .'
             }
         }
 
-        stage('Image Vulnerability Scanning') {
+    stage('Trivy DB Update') {
+        steps {
+            echo 'Updating Trivy Vulnerability Database'
+            sh 'trivy image --download-db-only'
+        }
+    }
+
+    stage('Container Security Scan') {
+        steps {
+            echo 'Running Container Security Scan'
+            sh 'TRIVY_TIMEOUT=5m trivy image --skip-update --severity HIGH wassimbhs/tp-foyer:1.0.0'
+        }
+    }
+
+            stage('Dockerhub') {
             steps {
-                echo 'Scanning Docker Image for Vulnerabilities'
-                sh 'trivy image wassimbhs/tp-foyer:1.0.0' // Image scanning with Trivy
+                echo 'Push Image to dockerhub : ';
+                    withCredentials([usernamePassword(credentialsId: 'dockerhubCredential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                           sh """
+                               echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+                               docker push "$DOCKER_USERNAME/tp-foyer:1.0.0"
+                           """
+                       }
             }
         }
 
-        stage('Push Image to Dockerhub') {
+        stage('Docker-Compose') {
             steps {
-                echo 'Pushing Image to Dockerhub'
-                withCredentials([usernamePassword(credentialsId: 'dockerhubCredential', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                    sh """
-                    echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-                    docker push "$DOCKER_USERNAME/tp-foyer:1.0.0"
-                    """
+                echo 'Starting Backend + DB'
+                sh 'docker compose up -d'
+            }
+        }
+
+stage('Quick Scan with Nikto') {
+    steps {
+        script {
+            // Run a Nikto scan against your web application
+            sh "nikto -h http://localhost:8080"
+        }
+    }
+}
+stage('Start Prometheus') {
+            steps {
+                script {
+                    sh 'docker start prometheus'
                 }
             }
         }
 
-        stage('Docker-Compose Deployment') {
+        stage('Start Grafana') {
             steps {
-                echo 'Starting Backend + DB with Docker Compose'
-                sh 'docker compose up -d'
+                script {
+                    sh 'docker start grafana'
+                }
             }
         }
+
+
+
+
     }
 
     post {
-        always {
-            cleanWs() // Clean workspace after build
-        }
-
         failure {
             mail to: 'wassimbhs303@gmail.com',
                  subject: "Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
