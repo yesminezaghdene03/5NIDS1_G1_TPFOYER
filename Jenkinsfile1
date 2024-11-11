@@ -1,14 +1,20 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'python:3.10-slim'  // Utilisation de l'image Docker Python 3.10
+            args '-u root' // Exécuter les commandes avec les droits root dans le conteneur
+        }
+    }
 
     environment {
-        MAVEN_HOME = tool name: 'M2_Home'
-        PYTHON_VENV = 'venv'
+        MAVEN_HOME = tool name: 'M2_HOME' // Configuration de Maven
+        PYTHON_VENV = 'venv' // Nom du répertoire pour l'environnement virtuel
     }
 
     stages {
         stage('Checkout') {
             steps {
+                // Récupérer le code du repository
                 checkout scm
             }
         }
@@ -16,13 +22,12 @@ pipeline {
         stage('Install Python3 Venv') {
             steps {
                 script {
-                    // Vérifier si python3-venv est installé
+                    // Vérifier si python3-venv est déjà installé et l'installer si nécessaire
                     sh '''
-                        # Assure-toi que python3-venv est déjà installé sur la machine Jenkins.
+                        echo "Vérification de l'installation de python3-venv"
                         if ! dpkg -s python3-venv > /dev/null 2>&1; then
-                            echo "python3-venv n'est pas installé. Installation requise."
-                            apt-get update
-                            apt-get install -y python3.10-venv
+                            echo "python3-venv n'est pas installé. Installation en cours."
+                            apt-get update && apt-get install -y python3.10-venv
                         else
                             echo "python3-venv déjà installé."
                         fi
@@ -35,9 +40,10 @@ pipeline {
             steps {
                 script {
                     echo "Vérification des hooks de sécurité pre-commit"
+
                     // Installer pre-commit dans un environnement virtuel
                     sh '''
-                        echo "pre-commit n'est pas installé, installation dans un environnement virtuel..."
+                        echo "Installation de pre-commit dans un environnement virtuel..."
                         python3 -m venv ${PYTHON_VENV}
                         source ${PYTHON_VENV}/bin/activate
                         pip install pre-commit
@@ -49,87 +55,104 @@ pipeline {
 
         stage('Compile') {
             steps {
-                echo 'Compilation du projet'
-                // Ajoute ici les étapes de compilation si nécessaires
+                // Ajouter ici ton code de compilation Maven ou un autre processus
+                echo 'Compilation du projet...'
             }
         }
 
         stage('JUnit/Mockito Tests') {
             steps {
-                echo 'Exécution des tests JUnit/Mockito'
-                // Ajoute ici les étapes de test si nécessaires
+                // Ajouter ici tes tests unitaires
+                echo 'Exécution des tests unitaires...'
             }
         }
 
         stage('JaCoCo Report') {
             steps {
-                echo 'Génération du rapport JaCoCo'
-                // Ajoute ici les étapes de génération du rapport JaCoCo si nécessaires
+                // Ajouter ici l'étape de génération du rapport JaCoCo
+                echo 'Génération du rapport JaCoCo...'
             }
         }
 
         stage('JaCoCo coverage report') {
             steps {
-                echo 'Génération du rapport de couverture JaCoCo'
-                // Ajoute ici les étapes pour le rapport de couverture
+                // Ajouter ici l'étape d'analyse de la couverture JaCoCo
+                echo 'Analyse de la couverture JaCoCo...'
             }
         }
 
         stage('Scan: SonarQube') {
             steps {
-                echo 'Scan avec SonarQube'
-                // Ajoute ici les étapes pour le scan SonarQube si nécessaires
+                // Ajouter ici ton analyse SonarQube
+                echo 'Exécution de l’analyse SonarQube...'
             }
         }
 
         stage('Security Scan: Trufflehog') {
             steps {
-                echo 'Scan de sécurité avec Trufflehog'
-                // Ajoute ici les étapes pour Trufflehog si nécessaires
+                // Ajouter ici le scan de sécurité avec Trufflehog
+                echo 'Exécution du scan Trufflehog...'
             }
         }
 
         stage('Security Scan: OWASP Dependency-Check') {
             steps {
-                echo 'Scan de sécurité avec OWASP Dependency-Check'
-                // Ajoute ici les étapes pour OWASP Dependency-Check si nécessaires
+                // Ajouter ici le scan de dépendances OWASP
+                echo 'Exécution du scan OWASP Dependency-Check...'
             }
         }
 
         stage('Deploy to Nexus') {
             steps {
-                echo 'Déploiement sur Nexus'
-                // Ajoute ici les étapes pour déployer sur Nexus si nécessaires
+                // Ajouter ici le déploiement dans Nexus
+                echo 'Déploiement vers Nexus...'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo 'Construction de l\'image Docker'
-                // Ajoute ici les étapes pour construire l'image Docker
+                // Ajouter ici la construction de l'image Docker
+                echo 'Construction de l’image Docker...'
             }
         }
 
         stage('Push Docker Image to DockerHub') {
             steps {
-                echo 'Poussée de l\'image Docker vers DockerHub'
-                // Ajoute ici les étapes pour pousser l'image Docker vers DockerHub
+                // Ajouter ici le push de l'image Docker sur DockerHub
+                echo 'Push de l’image Docker vers DockerHub...'
             }
         }
 
         stage('Run Docker Compose') {
             steps {
-                echo 'Exécution de Docker Compose'
-                // Ajoute ici les étapes pour exécuter Docker Compose
+                // Ajouter ici l'exécution de Docker Compose
+                echo 'Exécution de Docker Compose...'
             }
         }
 
         stage('Declarative: Post Actions') {
             steps {
                 mail to: 'aminedridia9@gmail.com',
-                     subject: "Build Status: ${currentBuild.currentResult}",
-                     body: "The Jenkins build has finished with status: ${currentBuild.currentResult}"
+                     subject: "Build ${currentBuild.fullDisplayName} - ${currentBuild.result}",
+                     body: "Le résultat du build est ${currentBuild.result}."
             }
+        }
+    }
+
+    post {
+        always {
+            // Actions à exécuter après chaque exécution du pipeline
+            echo 'Pipeline terminé.'
+        }
+
+        success {
+            // Actions à exécuter si le pipeline est réussi
+            echo 'Le build a réussi.'
+        }
+
+        failure {
+            // Actions à exécuter si le pipeline échoue
+            echo 'Le build a échoué.'
         }
     }
 }
