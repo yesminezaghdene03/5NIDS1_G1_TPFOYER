@@ -9,7 +9,31 @@ pipeline {
             }
         }
 
-        // Autres étapes de compilation, analyse, déploiement, etc.
+        /* 
+        stage('Build') {
+            steps {
+                sh 'mvn clean compile' // Étape de compilation
+            }
+        }
+        */
+
+        /* 
+        stage('Scan') {
+            steps {
+                withSonarQubeEnv('sq1') {
+                    sh 'mvn sonar:sonar' // Analyse SonarQube avec les classes compilées
+                }
+            }
+        }
+        */
+
+        /* 
+        stage('Deploy to Nexus') {
+            steps {
+                sh 'mvn deploy -DskipTests -DaltDeploymentRepository=deploymentRepo::default::http://192.168.33.10:8081/repository/maven-releases/'
+            }
+        }
+        */
 
         stage('Build Docker Image') {
             steps {
@@ -37,16 +61,4 @@ pipeline {
             }
         }
     }
-
-    post {
-        always {
-            emailext(
-                subject: "Build de ${env.JOB_NAME} #${env.BUILD_NUMBER} - ${currentBuild.result}",
-                body: """<p>Bonjour,</p>
-                         <p>Le build <b>#${env.BUILD_NUMBER}</b> du job <b>${env.JOB_NAME}</b> est terminé avec le statut <b>${currentBuild.result}</b>.</p>
-                         <p>Cliquez <a href="${env.BUILD_URL}">ici</a> pour voir les détails du build.</p>""",
-                to: 'aminedridia9@gmail.com'
-            )
-        }
-    }
-}
+} 
