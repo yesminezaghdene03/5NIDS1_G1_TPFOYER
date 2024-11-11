@@ -3,8 +3,8 @@ pipeline {
 
     tools {
         git 'Default' // Assurez-vous que 'Default' correspond à l'installation Git configurée dans Jenkins
-        maven 'M2_Home' // Vérifiez que 'M2_HOME' correspond à l'installation Maven configurée dans Jenkins
-        jdk 'JDK 17' // Assurez-vous que 'JDK 17' correspond à l'installation JDK 17 configurée dans Jenkins
+        maven 'M2_Home'
+        jdk 'JAVA_HOME'
     }
 
     environment {
@@ -15,7 +15,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'YesminZaghden_NIDS1_G1', url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
+                git branch: 'AmineDridia_5NIDS1_G1', url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
             }
         }
 
@@ -57,7 +57,7 @@ pipeline {
         stage('Docker Build') { // Stage pour construire l'image Docker
             steps {
                 script {
-                    sh "docker build -t yesmin1/tp-foyer:5.0.0 ."
+                    sh "docker build -t aminedridia/tp-foyer:5.0.0 ."
                 }
             }
         }
@@ -70,7 +70,7 @@ pipeline {
                         sh "docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD"
 
                         // Pousser l'image dans Docker Hub avec le bon nom d'utilisateur
-                        sh "docker push yesmin1/tp-foyer:5.0.0"
+                        sh "docker push aminedridia/tp-foyer:5.0.0"
                     }
                 }
             }
@@ -84,7 +84,7 @@ pipeline {
             }
         }
 
-        stage('Start Prometheus') {
+        stage('Start Prometheus') { // Stage pour démarrer Prometheus
             steps {
                 script {
                     sh 'docker start prometheus'
@@ -92,17 +92,11 @@ pipeline {
             }
         }
 
-        stage('Start Grafana') {
+        stage('Start Grafana') { // Stage pour démarrer Grafana
             steps {
                 script {
                     sh 'docker start grafana'
                 }
-            }
-        }
-
-        stage('Check Java Version') { // Vérification de la version de Java
-            steps {
-                sh 'java -version'  // Affiche la version de Java utilisée pour s'assurer que JDK 17 est bien configuré
             }
         }
     }
@@ -119,12 +113,12 @@ pipeline {
         }
         success {
             echo 'Build and deployment successful!'
-            mail to: 'yesminzaghden1@gmail.com',
+            mail to: 'aminedridia9@gmail.com', // Modification de l'email
                  subject: "Build Success - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                  body: "The build was successful! Check the details at ${env.BUILD_URL}"
         }
         failure {
-            mail to: 'yesminzaghden1@gmail.com',
+            mail to: 'aminedridia9@gmail.com', // Modification de l'email
                  subject: "Build Failure - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                  body: "The build failed. Please check the details at ${env.BUILD_URL}"
         }
