@@ -24,7 +24,7 @@ services:
         condition: service_healthy
     restart: on-failure
     ports:
-      - 8089:8089
+      - 8091:8091
     environment:
       SPRING_APPLICATION_JSON: >-
         {
@@ -34,7 +34,7 @@ services:
           "spring.jpa.show-sql": true,
           "spring.jpa.hibernate.ddl-auto": "update",
           "spring.jpa.properties.hibernate.dialect": "org.hibernate.dialect.MySQLDialect",
-          "server.port": 8091,
+          "server.port": 8089,
           "server.servlet.context-path": "/tpfoyer",
           "management.endpoints.web.exposure.include": "prometheus",
           "management.endpoint.prometheus.enabled": true
