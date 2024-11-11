@@ -1,128 +1,93 @@
 pipeline {
     agent any
 
-    environment {
-        DOCKER_USERNAME = "aminedridia"  // Utilisateur DockerHub
-        DOCKER_PASSWORD = "aminedridia"  // Mot de passe DockerHub
-        IMAGE_NAME = "your-image-name"   // Nom de l'image Docker
-        IMAGE_TAG = "latest"             // Tag de l'image Docker
-    }
-
     stages {
-        stage('Pre-Commit') {
+        stage('Pre-commit Security Hooks') {
             steps {
                 script {
-                    // Désactiver la configuration core.hooksPath pour permettre l'installation des hooks
-                    sh 'git config --unset-all core.hooksPath'
-
-                    // Préparer l'environnement Python et installer les outils nécessaires
+                    echo "Vérification des hooks de sécurité pre-commit"
                     sh '''
-                    python3 -m venv venv
-                    . venv/bin/activate
-                    pip install pre-commit
-                    pre-commit install
+                        echo "Installation de pre-commit dans un environnement virtuel..."
+                        python3 -m venv venv
+                        . venv/bin/activate  # Remplacer 'source' par '.'
+                        pip install pre-commit
+                        git config --unset-all core.hooksPath  # Réinitialiser la configuration
+                        pre-commit install  # Installer les hooks
                     '''
                 }
             }
         }
 
-        stage('Static Code Analysis: FindSecurityBugs') {
+        stage('Compile') {
             steps {
-                script {
-                    // Lancer l'analyse avec FindSecurityBugs ici
-                    echo "Static Code Analysis: FindSecurityBugs"
-                }
-            }
-        }
-
-        stage('Static Code Analysis: SonarQube') {
-            steps {
-                script {
-                    // Lancer l'analyse SonarQube ici
-                    echo "Static Code Analysis: SonarQube"
-                }
+                echo "Compilation du code"
+                // Ajoute ici les commandes de compilation si nécessaire
             }
         }
 
         stage('JUnit/Mockito Tests') {
             steps {
-                script {
-                    // Exécuter les tests JUnit/Mockito ici
-                    echo "JUnit/Mockito Tests"
-                }
+                echo "Exécution des tests JUnit/Mockito"
+                // Ajoute ici les commandes pour exécuter les tests
             }
         }
 
-        stage('Security Scan: OWASP Dependency-Check') {
+        stage('Scan: SonarQube') {
             steps {
-                script {
-                    // Lancer l'analyse de sécurité OWASP Dependency-Check ici
-                    echo "Security Scan: OWASP Dependency-Check"
-                }
+                echo "Analyse SonarQube"
+                // Ajoute ici les commandes pour le scan SonarQube
+            }
+        }
+
+        stage('Security Scan: Trufflehog') {
+            steps {
+                echo "Scan de sécurité avec Trufflehog"
+                // Ajoute ici les commandes pour Trufflehog
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    // Build Docker image
-                    sh 'docker build -t $DOCKER_USERNAME/$IMAGE_NAME:$IMAGE_TAG .'
-                }
+                echo "Création de l'image Docker"
+                // Ajoute ici les commandes pour créer l'image Docker
             }
         }
 
         stage('Push Docker Image to DockerHub') {
             steps {
-                script {
-                    // Push Docker image to DockerHub
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                        sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
-                        sh 'docker push $DOCKER_USERNAME/$IMAGE_NAME:$IMAGE_TAG'
-                    }
-                }
+                echo "Push de l'image Docker vers DockerHub"
+                // Ajoute ici les commandes pour pousser l'image Docker vers DockerHub
             }
         }
 
         stage('Run Docker Compose') {
             steps {
-                script {
-                    // Exécuter Docker Compose ici
-                    echo "Run Docker Compose"
-                }
+                echo "Exécution de Docker Compose"
+                // Ajoute ici les commandes pour exécuter Docker Compose
             }
         }
 
         stage('Deploy to Nexus') {
             steps {
-                script {
-                    // Déployer l'application sur Nexus
-                    echo "Deploy to Nexus"
-                }
+                echo "Déploiement vers Nexus"
+                // Ajoute ici les commandes pour déployer vers Nexus
             }
         }
 
-        stage('Declarative: Post Actions') {
+        stage('Post Actions') {
             steps {
-                script {
-                    // Envoyer des notifications par email après le build
-                    emailext to: 'aminedridia9@gmail.com',
-                             subject: "Build Status",
-                             body: "Build has finished. Status: ${currentBuild.currentResult}"
-                }
+                echo "Actions post-build"
+                // Ajoute ici les actions post-build nécessaires
             }
         }
     }
 
     post {
-        always {
-            echo 'Cleaning up'
-            cleanWs()
-        }
         success {
-            echo 'Build succeeded!'
+            echo "Pipeline terminé avec succès"
         }
         failure {
-            echo 'Build failed!'
+            echo "Le build a échoué"
         }
     }
 }
