@@ -2,7 +2,7 @@ pipeline {
     agent any  // Utiliser un agent générique au lieu de Docker
 
     environment {
-        MAVEN_HOME = tool name: 'M2_HOME'// Configuration de Maven
+        MAVEN_HOME = tool name: 'M2_Home'// Configuration de Maven
         PYTHON_VENV = 'venv' // Nom du répertoire pour l'environnement virtuel
     }
 
