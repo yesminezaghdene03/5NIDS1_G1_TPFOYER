@@ -110,6 +110,21 @@ stage('Deploy to Nexus') {
                 sh 'docker compose up -d';
             }
         }
+        stage('Start Prometheus') {
+                    steps {
+                        script {
+                            sh 'docker start prometheus'
+                        }
+                    }
+                }
+
+                stage('Start Grafana') {
+                    steps {
+                        script {
+                            sh 'docker start grafana'
+                        }
+                    }
+                }
 
     }
 
