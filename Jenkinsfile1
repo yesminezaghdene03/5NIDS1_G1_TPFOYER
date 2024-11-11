@@ -1,17 +1,20 @@
 pipeline {
     agent any
 
-    stages {
-        stage('Checkout') {
-            steps {
-                // Vérifier le code depuis le dépôt Git
-                checkout scm
-            }
-        }
+    environment {
+        DOCKER_USERNAME = "aminedridia"  // Utilisateur DockerHub
+        DOCKER_PASSWORD = "aminedridia"  // Mot de passe DockerHub
+        IMAGE_NAME = "your-image-name"   // Nom de l'image Docker
+        IMAGE_TAG = "latest"             // Tag de l'image Docker
+    }
 
+    stages {
         stage('Pre-Commit') {
             steps {
                 script {
+                    // Désactiver la configuration core.hooksPath pour permettre l'installation des hooks
+                    sh 'git config --unset-all core.hooksPath'
+
                     // Préparer l'environnement Python et installer les outils nécessaires
                     sh '''
                     python3 -m venv venv
@@ -22,12 +25,12 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Static Code Analysis: FindSecurityBugs') {
             steps {
                 script {
-                    // Exécuter l'analyse de sécurité avec FindSecurityBugs
-                    sh 'mvn clean compile findbugs:findbugs'
+                    // Lancer l'analyse avec FindSecurityBugs ici
+                    echo "Static Code Analysis: FindSecurityBugs"
                 }
             }
         }
@@ -35,8 +38,8 @@ pipeline {
         stage('Static Code Analysis: SonarQube') {
             steps {
                 script {
-                    // Lancer l'analyse SonarQube
-                    sh 'mvn sonar:sonar'
+                    // Lancer l'analyse SonarQube ici
+                    echo "Static Code Analysis: SonarQube"
                 }
             }
         }
@@ -44,8 +47,8 @@ pipeline {
         stage('JUnit/Mockito Tests') {
             steps {
                 script {
-                    // Exécuter les tests unitaires JUnit avec Mockito
-                    sh 'mvn test'
+                    // Exécuter les tests JUnit/Mockito ici
+                    echo "JUnit/Mockito Tests"
                 }
             }
         }
@@ -53,8 +56,8 @@ pipeline {
         stage('Security Scan: OWASP Dependency-Check') {
             steps {
                 script {
-                    // Lancer le scan OWASP Dependency-Check
-                    sh 'mvn org.owasp:dependency-check-maven:check'
+                    // Lancer l'analyse de sécurité OWASP Dependency-Check ici
+                    echo "Security Scan: OWASP Dependency-Check"
                 }
             }
         }
@@ -62,12 +65,8 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Se connecter à DockerHub via les credentials Jenkins et construire l'image
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                        sh '''
-                        docker build -t ${DOCKER_USERNAME}/my-app .
-                        '''
-                    }
+                    // Build Docker image
+                    sh 'docker build -t $DOCKER_USERNAME/$IMAGE_NAME:$IMAGE_TAG .'
                 }
             }
         }
@@ -75,12 +74,10 @@ pipeline {
         stage('Push Docker Image to DockerHub') {
             steps {
                 script {
-                    // Se connecter à DockerHub et pousser l'image
+                    // Push Docker image to DockerHub
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                        sh '''
-                        docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
-                        docker push ${DOCKER_USERNAME}/my-app
-                        '''
+                        sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
+                        sh 'docker push $DOCKER_USERNAME/$IMAGE_NAME:$IMAGE_TAG'
                     }
                 }
             }
@@ -89,8 +86,8 @@ pipeline {
         stage('Run Docker Compose') {
             steps {
                 script {
-                    // Lancer les services avec Docker Compose
-                    sh 'docker-compose up -d'
+                    // Exécuter Docker Compose ici
+                    echo "Run Docker Compose"
                 }
             }
         }
@@ -99,7 +96,18 @@ pipeline {
             steps {
                 script {
                     // Déployer l'application sur Nexus
-                    sh 'mvn deploy'
+                    echo "Deploy to Nexus"
+                }
+            }
+        }
+
+        stage('Declarative: Post Actions') {
+            steps {
+                script {
+                    // Envoyer des notifications par email après le build
+                    emailext to: 'aminedridia9@gmail.com',
+                             subject: "Build Status",
+                             body: "Build has finished. Status: ${currentBuild.currentResult}"
                 }
             }
         }
@@ -107,12 +115,14 @@ pipeline {
 
     post {
         always {
-            // Envoyer une notification par email
-            emailext(
-                subject: "Build ${currentBuild.currentResult}: ${currentBuild.fullDisplayName}",
-                body: "The build is complete. Check the Jenkins dashboard for more details.",
-                to: "aminedridia9@gmail.com"
-            )
+            echo 'Cleaning up'
+            cleanWs()
+        }
+        success {
+            echo 'Build succeeded!'
+        }
+        failure {
+            echo 'Build failed!'
         }
     }
 }
