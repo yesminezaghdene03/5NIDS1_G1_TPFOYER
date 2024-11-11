@@ -3,7 +3,7 @@ pipeline {
 
     tools {
         git 'Default' // Assurez-vous que 'Default' correspond à l'installation Git configurée dans Jenkins
-        maven 'M2_HOME'
+        maven 'M2_Home'
         jdk 'JAVA_HOME'
     }
 
