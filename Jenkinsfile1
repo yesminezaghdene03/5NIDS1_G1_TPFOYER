@@ -1,93 +1,176 @@
 pipeline {
     agent any
 
+    tools {
+        jdk 'JAVA_HOME'
+        maven 'M2_HOME'
+    }
+
     stages {
+        // Development Phase: Pre-commit Security Hooks
+        stage('GIT') {
+            steps {
+                git branch: 'AmineDridia_5NIDS1_G1', 
+                    url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
+            }
+        }
+
         stage('Pre-commit Security Hooks') {
             steps {
                 script {
-                    echo "Vérification des hooks de sécurité pre-commit"
                     sh '''
-                        echo "Installation de pre-commit dans un environnement virtuel..."
+                    if ! command -v pre-commit &> /dev/null
+                    then
+                        echo "pre-commit n'est pas installé, installation dans un environnement virtuel..."
                         python3 -m venv venv
-                        . venv/bin/activate  # Remplacer 'source' par '.'
+                        . venv/bin/activate
                         pip install pre-commit
-                        git config --unset-all core.hooksPath  # Réinitialiser la configuration
-                        pre-commit install  # Installer les hooks
+                    fi
+                    git config --unset-all core.hooksPath
+                    pre-commit install
+                    pre-commit run --all-files
                     '''
                 }
             }
         }
 
-        stage('Compile') {
+        // Commit Phase: JUnit/Mockito Security Unit Tests
+        stage('Compile Stage') {
             steps {
-                echo "Compilation du code"
-                // Ajoute ici les commandes de compilation si nécessaire
+                sh 'mvn clean compile'
             }
         }
 
         stage('JUnit/Mockito Tests') {
             steps {
-                echo "Exécution des tests JUnit/Mockito"
-                // Ajoute ici les commandes pour exécuter les tests
+                sh 'mvn test' 
             }
         }
 
-        stage('Scan: SonarQube') {
+        stage('JaCoCo Report') {
             steps {
-                echo "Analyse SonarQube"
-                // Ajoute ici les commandes pour le scan SonarQube
+                sh 'mvn jacoco:report'
             }
         }
 
-        stage('Security Scan: Trufflehog') {
+        stage('JaCoCo coverage report') {
             steps {
-                echo "Scan de sécurité avec Trufflehog"
-                // Ajoute ici les commandes pour Trufflehog
+                step([$class: 'JacocoPublisher',
+                      execPattern: '**/target/jacoco.exec',
+                      classPattern: '**/classes',
+                      sourcePattern: '**/src',
+                      exclusionPattern: '*/target/**/,**/*Test*,**/*_javassist/**'
+                ])
             }
         }
 
-        stage('Build Docker Image') {
+        // Acceptance Phase: Security Scanning Tools
+        stage('Scan : SonarQube') {
             steps {
-                echo "Création de l'image Docker"
-                // Ajoute ici les commandes pour créer l'image Docker
+                withSonarQubeEnv('sq1') {
+                    sh 'mvn sonar:sonar'
+                }
             }
         }
 
-        stage('Push Docker Image to DockerHub') {
+        stage('Security Scan: Nmap') {
             steps {
-                echo "Push de l'image Docker vers DockerHub"
-                // Ajoute ici les commandes pour pousser l'image Docker vers DockerHub
+                script {
+                    echo "Starting Nmap Security Scan..."
+                    sh 'sudo nmap -sS -p 1-65535 -v localhost'
+                }
             }
         }
 
-        stage('Run Docker Compose') {
+        stage('Security Scan: OWASP Dependency-Check') {
             steps {
-                echo "Exécution de Docker Compose"
-                // Ajoute ici les commandes pour exécuter Docker Compose
+                script {
+                    echo "Starting OWASP Dependency-Check..."
+                    sh 'mvn org.owasp:dependency-check-maven:check'
+                }
             }
         }
 
+        // Production Phase: Deployment and Monitoring
         stage('Deploy to Nexus') {
             steps {
-                echo "Déploiement vers Nexus"
-                // Ajoute ici les commandes pour déployer vers Nexus
+                sh 'mvn deploy -DskipTests -DaltDeploymentRepository=deploymentRepo::default::http://192.168.33.10:8081/repository/maven-releases/'
             }
         }
 
-        stage('Post Actions') {
+        stage('Building image') {
             steps {
-                echo "Actions post-build"
-                // Ajoute ici les actions post-build nécessaires
+                sh 'docker build -t nawel119/gestion-station-ski:1.0.0 .'
+            }
+        }
+
+        stage('Deploy image') {
+            steps {
+                withCredentials([string(credentialsId: 'dockerhub-jenkins-token', variable: 'dockerhub_token')]) {
+                    sh "docker login -u nawel119 -p ${dockerhub_token}"
+                    sh 'docker push nawel119/gestion-station-ski:1.0.0'
+                }
+            }
+        }
+
+        stage('Docker compose') {
+            steps {
+                sh 'docker compose up -d'
+            }
+        }
+
+        // Operations Phase: Container and Pipeline Monitoring
+        stage('Start Monitoring Containers') {
+            steps {
+                sh 'docker start be79135ec1cc'
+            }
+        }
+
+        stage('Email Notification') {
+            steps {
+                mail bcc: '', 
+                     body: '''
+Final Report: The pipeline has completed successfully. No action required.
+''', 
+                     cc: '', 
+                     from: '', 
+                     replyTo: '', 
+                     subject: 'Succès de la pipeline DevOps Project', 
+                     to: 'aminedridia9@gmail.com'
             }
         }
     }
 
     post {
         success {
-            echo "Pipeline terminé avec succès"
+            script {
+                emailext (
+                    subject: "Build Success: ${currentBuild.fullDisplayName}",
+                    body: "Le build a réussi ! Consultez les détails à ${env.BUILD_URL}",
+                    recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'DevelopersRecipientProvider']],
+                    to: 'aminedridia9@gmail.com'
+                )
+            }
         }
         failure {
-            echo "Le build a échoué"
+            script {
+                emailext (
+                    subject: "Build Failure: ${currentBuild.fullDisplayName}",
+                    body: "Le build a échoué ! Vérifiez les détails à ${env.BUILD_URL}",
+                    recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'DevelopersRecipientProvider']],
+                    to: 'aminedridia9@gmail.com'
+                )
+            }
+        }
+        always {
+            script {
+                emailext (
+                    subject: "Build Notification: ${currentBuild.fullDisplayName}",
+                    body: "Consultez les détails du build à ${env.BUILD_URL}",
+                    recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'DevelopersRecipientProvider']],
+                    to: 'aminedridia9@gmail.com'
+                )
+            }
         }
     }
 }
