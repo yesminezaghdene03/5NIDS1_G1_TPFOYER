@@ -1,7 +1,0 @@
-# .pre-commit-config.yaml
-
-- repo: https://github.com/find-sec-bugs/find-sec-bugs
-  rev: v1.13.0  # Version de FindSecurityBugs à utiliser
-  hooks:
-    - id: find-sec-bugs
-      args: ['-includeFilters', 'OWASP-A1', 'OWASP-A2']  # Vous pouvez ajuster les filtres selon vos besoins
