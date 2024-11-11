@@ -1,71 +1,106 @@
 pipeline {
     agent any
+
     environment {
-        DOCKER_IMAGE = 'myapp'  // Nom de l'image Docker
         DOCKER_USERNAME = credentials('dockerhub-credentials').username  // Utilisateur DockerHub
         DOCKER_PASSWORD = credentials('dockerhub-credentials').password  // Mot de passe DockerHub
-        // Ajout du chemin où pre-commit est installé
-        PATH = "/var/lib/jenkins/.local/bin:$PATH"  
     }
+
     stages {
-        // Stage de récupération du code depuis le dépôt Git
         stage('Checkout') {
             steps {
-                checkout scm  // Récupérer les modifications du dépôt
+                // Vérifier le code depuis le dépôt Git
+                checkout scm
             }
         }
-
-        // Stage pour installer et configurer pre-commit
-        stage('Install pre-commit') {
+        
+        stage('Pre-Commit') {
             steps {
                 script {
-                    echo "Installing pre-commit..."
-                    // Création d'un environnement virtuel pour pre-commit
-                    sh 'python3 -m venv venv'  // Créer un environnement virtuel
-                    sh '. venv/bin/activate'  // Activer l'environnement virtuel
-                    sh 'pip install pre-commit'  // Installer pre-commit
+                    // Préparer l'environnement Python et installer les outils nécessaires
+                    sh '''
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip install pre-commit
+                    pre-commit install
+                    '''
+                }
+            }
+        }
+        
+        stage('Static Code Analysis: FindSecurityBugs') {
+            steps {
+                script {
+                    // Exécuter l'analyse de sécurité avec FindSecurityBugs
+                    sh 'mvn clean compile findbugs:findbugs'
                 }
             }
         }
 
-        // Stage pour effectuer une analyse statique avec OWASP Dependency-Check
-        stage('Static Code Analysis: OWASP Dependency-Check') {
+        stage('Static Code Analysis: SonarQube') {
             steps {
                 script {
-                    echo "Running OWASP Dependency-Check..."
-                    // Effectuer une analyse avec OWASP Dependency-Check
-                    sh 'mvn clean install -DskipTests'  // Construire le projet sans tester
-                    sh 'mvn org.owasp:dependency-check-maven:check'  // Exécuter l'analyse de sécurité
+                    // Lancer l'analyse SonarQube
+                    sh 'mvn sonar:sonar'
                 }
             }
         }
 
-        // Stage pour exécuter les tests unitaires avec JUnit et Mockito
         stage('JUnit/Mockito Tests') {
             steps {
-                echo "Running Unit Tests..."
-                // Exécuter les tests unitaires avec Maven
-                sh 'mvn test'
+                script {
+                    // Exécuter les tests unitaires JUnit avec Mockito
+                    sh 'mvn test'
+                }
             }
         }
 
-        // Stage pour construire l'image Docker
+        stage('Security Scan: OWASP Dependency-Check') {
+            steps {
+                script {
+                    // Lancer le scan OWASP Dependency-Check
+                    sh 'mvn org.owasp:dependency-check-maven:check'
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
-                echo "Building Docker Image..."
-                // Construire l'image Docker
-                sh 'docker build -t $DOCKER_IMAGE .'  // Construire l'image Docker
+                script {
+                    // Construire l'image Docker
+                    sh '''
+                    docker build -t ${DOCKER_USERNAME}/my-app .
+                    '''
+                }
             }
         }
 
-        // Stage pour pousser l'image Docker sur DockerHub
         stage('Push Docker Image to DockerHub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                    echo "Pushing Docker Image to DockerHub..."
+                script {
                     // Se connecter à DockerHub et pousser l'image
-                    sh "docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD"
-                    sh "docker push $DOCKER_IMAGE"
+                    sh '''
+                    docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
+                    docker push ${DOCKER_USERNAME}/my-app
+                    '''
+                }
+            }
+        }
+
+        stage('Run Docker Compose') {
+            steps {
+                script {
+                    // Lancer les services avec Docker Compose
+                    sh 'docker-compose up -d'
+                }
+            }
+        }
+
+        stage('Deploy to Nexus') {
+            steps {
+                script {
+                    // Déployer l'application sur Nexus
+                    sh 'mvn deploy'
                 }
             }
         }
@@ -73,17 +108,12 @@ pipeline {
 
     post {
         always {
-            // Envoi de la notification par email après l'exécution du pipeline
-            emailext to: 'aminedridia9@gmail.com',
-                     subject: 'Build Finished',
-                     body: 'The build is complete.'
-        }
-
-        // Envoi de la notification par email si le build échoue
-        failure {
-            emailext to: 'aminedridia9@gmail.com',
-                     subject: 'Build Failed',
-                     body: 'The build has failed. Please check the Jenkins logs for details.'
+            // Envoyer une notification par email
+            emailext(
+                subject: "Build ${currentBuild.currentResult}: ${currentBuild.fullDisplayName}",
+                body: "The build is complete. Check the Jenkins dashboard for more details.",
+                to: "aminedridia9@gmail.com"
+            )
         }
     }
 }
