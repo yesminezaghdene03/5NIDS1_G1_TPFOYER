@@ -8,14 +8,15 @@ pipeline {
                     // Exécution de l'étape de pré-commit pour vérifier les hooks de sécurité
                     echo 'Exécution des pre-commit hooks pour vérification de sécurité'
 
-                    // Vérifie si Python3 est installé pour exécuter les hooks de pré-commit (exemple)
+                    // Vérifie si Python3 est installé pour exécuter les hooks de pré-commit
                     sh '''
-                        if ! command -v python3 &> /dev/null
-                        then
+                        if ! command -v python3 &> /dev/null; then
                             echo "Python3 n'est pas installé, veuillez l'installer avant de continuer."
                             exit 1
+                        else
+                            echo "Python3 est installé, exécution des hooks de sécurité."
+                            pre-commit run --all-files
                         fi
-                        pre-commit run --all-files
                     '''
                 }
             }
@@ -27,8 +28,6 @@ pipeline {
                     url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER'
             }
         }
-
-        // Autres étapes de compilation, analyse, déploiement, etc.
 
         stage('Build Docker Image') {
             steps {
