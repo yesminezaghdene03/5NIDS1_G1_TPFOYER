@@ -1,100 +1,95 @@
 pipeline {
     agent any
-
+    environment {
+        SONARQUBE_SERVER = 'http://192.168.33.10:9000'  // Adresse de votre serveur SonarQube
+        SONAR_TOKEN = 'your_generated_token'             // Remplacez par votre token SonarQube
+    }
     stages {
-        // Development Phase: Pre-commit Security Hooks
-        stage('GIT') {
-            steps {
-                git branch: 'AmineDridia_5NIDS1_G1',
-                    url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
-            }
-        }
-
-        stage('Pre-commit Security Hooks') {
+        stage('Pre-Commit') {
             steps {
                 script {
+                    // Créer le fichier .pre-commit-config.yaml si nécessaire
+                    writeFile file: '.pre-commit-config.yaml', text: '''
+                    - repo: https://github.com/find-sec-bugs/find-sec-bugs
+                      rev: v1.13.0
+                      hooks:
+                        - id: find-sec-bugs
+                          args: ['-includeFilters', 'OWASP-A1', 'OWASP-A2']
+                    '''
+                    
+                    // Installer et exécuter pre-commit avec FindSecurityBugs
                     sh '''
-                    if ! command -v pre-commit &> /dev/null
-                    then
-                        echo "pre-commit n'est pas installé, installation dans un environnement virtuel..."
-                        python3 -m venv venv
-                        . venv/bin/activate
-                        pip install pre-commit
-                    fi
-                    git config --unset-all core.hooksPath
-                    pre-commit install
-                    pre-commit run --all-files
+                        python -m venv venv  # Crée un environnement virtuel
+                        source venv/bin/activate  # Active l'environnement virtuel
+                        pip install pre-commit  # Installe pre-commit
+                        pre-commit install  # Installe les hooks de pre-commit
+                        pre-commit run --all-files  # Exécute l'analyse de sécurité FindSecurityBugs sur tous les fichiers
                     '''
                 }
             }
         }
-
-        // Commented out unused stages for now
-        /* 
-        stage('Build') {
+        stage('Static Code Analysis: SonarQube') {
             steps {
-                sh 'mvn clean compile' // Étape de compilation
-            }
-        }
-        */
-
-        /* 
-        stage('Scan') {
-            steps {
-                withSonarQubeEnv('sq1') {
-                    sh 'mvn sonar:sonar' // Analyse SonarQube avec les classes compilées
-                }
-            }
-        }
-        */
-
-        /* 
-        stage('Deploy to Nexus') {
-            steps {
-                sh 'mvn deploy -DskipTests -DaltDeploymentRepository=deploymentRepo::default::http://192.168.33.10:8081/repository/maven-releases/'
-            }
-        }
-        */
-
-        // Docker Build and Push Stages
-        stage('Build Docker Image') {
-            steps {
-                sh 'sudo docker build -t aminedridia/tp-foyer:5.0.0 .'
-            }
-        }
-
-        stage('Push Docker Image to DockerHub') {
-            steps {
+                echo "Running SonarQube analysis"
                 sh '''
-                    sudo docker login -u aminedridia -p adminamine 
-                    sudo docker push aminedridia/tp-foyer:5.0.0
+                    mvn clean install sonar:sonar -Dsonar.host.url=${SONARQUBE_SERVER} -Dsonar.login=${SONAR_TOKEN}
                 '''
             }
         }
-
+        stage('JUnit/Mockito Tests') {
+            steps {
+                echo "Running Unit Tests"
+                sh 'mvn test'  // Exécute les tests unitaires via Maven
+            }
+        }
+        stage('Security Scan: OWASP Dependency-Check') {
+            steps {
+                echo "Running OWASP Dependency-Check"
+                sh 'mvn org.owasp:dependency-check-maven:check'  // Exécute l'analyse OWASP Dependency-Check
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                echo "Building Docker Image"
+                sh 'docker build -t your-image-name .'  // Remplacez par la commande Docker appropriée
+            }
+        }
+        stage('Push Docker Image to DockerHub') {
+            steps {
+                echo "Pushing Docker Image to DockerHub"
+                sh 'docker push your-image-name'  // Remplacez par la commande de push Docker
+            }
+        }
         stage('Run Docker Compose') {
             steps {
-                script {
-                    sh '''
-                        sudo docker-compose down 
-                        sudo docker-compose up -d
-                    '''
-                }
+                echo "Running Docker Compose"
+                sh 'docker-compose up -d'  // Lancement de Docker Compose
+            }
+        }
+        stage('Deploy to Nexus') {
+            steps {
+                echo "Deploying to Nexus"
+                sh 'mvn deploy'  // Déploiement sur Nexus
             }
         }
     }
-
     post {
+        always {
+            echo 'Build finished'  // Message indiquant la fin du build
+        }
         success {
-            echo 'Build and deployment successful!'
-            mail to: 'aminedridia9@gmail.com',
-                 subject: "Build Success - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                 body: "The build was successful! Check the details at ${env.BUILD_URL}"
+            emailext (
+                subject: "Build Success: ${currentBuild.fullDisplayName}",
+                body: "The Jenkins build was successful. All steps completed successfully.",
+                to: "aminedridia9@gmail.com"  // Adresse email de notification en cas de succès
+            )
         }
         failure {
-            mail to: 'aminedridia9@gmail.com',
-                 subject: "Build Failure - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                 body: "The build failed. Please check the details at ${env.BUILD_URL}"
+            emailext (
+                subject: "Build Failure: ${currentBuild.fullDisplayName}",
+                body: "The Jenkins build has failed. Please check the logs for details.",
+                to: "aminedridia9@gmail.com"  // Adresse email de notification en cas d'échec
+            )
         }
     }
 }
