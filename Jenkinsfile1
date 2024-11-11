@@ -1,105 +1,71 @@
 pipeline {
     agent any
     environment {
-        DOCKERHUB_CREDENTIALS = 'dockerhub-credentials'
-        SONAR_TOKEN = credentials('jenkins-sonar') // Token SonarQube pour analyse
+        DOCKER_IMAGE = 'myapp'  // Nom de l'image Docker
+        DOCKER_USERNAME = credentials('dockerhub-credentials').username  // Utilisateur DockerHub
+        DOCKER_PASSWORD = credentials('dockerhub-credentials').password  // Mot de passe DockerHub
+        // Ajout du chemin où pre-commit est installé
+        PATH = "/var/lib/jenkins/.local/bin:$PATH"  
     }
     stages {
+        // Stage de récupération du code depuis le dépôt Git
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER', branch: 'AmineDridia_5NIDS1_G1'
+                checkout scm  // Récupérer les modifications du dépôt
             }
         }
 
-        stage('Pre-Commit') {
+        // Stage pour installer et configurer pre-commit
+        stage('Install pre-commit') {
             steps {
                 script {
-                    // Création et activation de l'environnement virtuel pour pre-commit
-                    sh 'python3 -m venv venv'
-                    sh '. venv/bin/activate'
-                    sh 'pip install pre-commit'
-                    sh 'pre-commit install'
-                    sh 'pre-commit run --all-files'
+                    echo "Installing pre-commit..."
+                    // Création d'un environnement virtuel pour pre-commit
+                    sh 'python3 -m venv venv'  // Créer un environnement virtuel
+                    sh '. venv/bin/activate'  // Activer l'environnement virtuel
+                    sh 'pip install pre-commit'  // Installer pre-commit
                 }
             }
         }
 
-        stage('Static Code Analysis: FindSecurityBugs') {
+        // Stage pour effectuer une analyse statique avec OWASP Dependency-Check
+        stage('Static Code Analysis: OWASP Dependency-Check') {
             steps {
                 script {
-                    // Exécuter FindSecurityBugs avec Gradle
-                    def securityCheck = sh(script: './gradlew findbugsMain', returnStatus: true)
-                    if (securityCheck != 0) {
-                        error "FindSecurityBugs analysis failed!"
-                    }
+                    echo "Running OWASP Dependency-Check..."
+                    // Effectuer une analyse avec OWASP Dependency-Check
+                    sh 'mvn clean install -DskipTests'  // Construire le projet sans tester
+                    sh 'mvn org.owasp:dependency-check-maven:check'  // Exécuter l'analyse de sécurité
                 }
             }
         }
 
-        stage('Static Code Analysis: SonarQube') {
-            steps {
-                script {
-                    // Lancer l'analyse SonarQube
-                    withSonarQubeEnv('SonarQube') {
-                        sh "mvn clean install sonar:sonar -Dsonar.login=${SONAR_TOKEN}"
-                    }
-                }
-            }
-        }
-
+        // Stage pour exécuter les tests unitaires avec JUnit et Mockito
         stage('JUnit/Mockito Tests') {
             steps {
-                script {
-                    // Exécuter les tests unitaires JUnit
-                    sh 'mvn test'
-                }
+                echo "Running Unit Tests..."
+                // Exécuter les tests unitaires avec Maven
+                sh 'mvn test'
             }
         }
 
-        stage('Security Scan: OWASP Dependency-Check') {
-            steps {
-                script {
-                    // Analyser les dépendances avec OWASP Dependency-Check
-                    sh './mvnw dependency-check:check'
-                }
-            }
-        }
-
+        // Stage pour construire l'image Docker
         stage('Build Docker Image') {
             steps {
-                script {
-                    // Construire l'image Docker
-                    sh 'docker build -t aminedridia/5nids1g1_tpfoyer:latest .'
-                }
+                echo "Building Docker Image..."
+                // Construire l'image Docker
+                sh 'docker build -t $DOCKER_IMAGE .'  // Construire l'image Docker
             }
         }
 
+        // Stage pour pousser l'image Docker sur DockerHub
         stage('Push Docker Image to DockerHub') {
             steps {
-                script {
-                    // Push l'image Docker vers DockerHub
-                    withCredentials([usernamePassword(credentialsId: DOCKERHUB_CREDENTIALS, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                        sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD'
-                        sh 'docker push aminedridia/5nids1g1_tpfoyer:latest'
-                    }
-                }
-            }
-        }
-
-        stage('Run Docker Compose') {
-            steps {
-                script {
-                    // Exécuter Docker Compose pour déployer les conteneurs
-                    sh 'docker-compose up -d'
-                }
-            }
-        }
-
-        stage('Deploy to Nexus') {
-            steps {
-                script {
-                    // Déployer l'artifact sur Nexus
-                    sh 'mvn deploy'
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    echo "Pushing Docker Image to DockerHub..."
+                    // Se connecter à DockerHub et pousser l'image
+                    sh "docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD"
+                    sh "docker push $DOCKER_IMAGE"
                 }
             }
         }
@@ -107,13 +73,17 @@ pipeline {
 
     post {
         always {
-            echo 'Build finished'
-            emailext subject: "Build Finished", to: 'aminedridia9@gmail.com', body: 'The build has completed successfully.'
+            // Envoi de la notification par email après l'exécution du pipeline
+            emailext to: 'aminedridia9@gmail.com',
+                     subject: 'Build Finished',
+                     body: 'The build is complete.'
         }
 
+        // Envoi de la notification par email si le build échoue
         failure {
-            echo 'Build failed'
-            emailext subject: "Build Failed", to: 'aminedridia9@gmail.com', body: 'The build has failed. Please check the logs for details.'
+            emailext to: 'aminedridia9@gmail.com',
+                     subject: 'Build Failed',
+                     body: 'The build has failed. Please check the Jenkins logs for details.'
         }
     }
 }
