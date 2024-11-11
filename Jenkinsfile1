@@ -1,15 +1,14 @@
 pipeline {
-    agent any  // Utiliser un agent générique au lieu de Docker
+    agent any
 
     environment {
-        MAVEN_HOME = tool name: 'M2_Home'// Configuration de Maven
-        PYTHON_VENV = 'venv' // Nom du répertoire pour l'environnement virtuel
+        MAVEN_HOME = tool name: 'M2_Home', 
+        PYTHON_VENV = 'venv'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Récupérer le code du repository
                 checkout scm
             }
         }
@@ -17,12 +16,12 @@ pipeline {
         stage('Install Python3 Venv') {
             steps {
                 script {
-                    // Vérifier si python3-venv est déjà installé et l'installer si nécessaire
+                    // Vérifier et installer python3-venv dans l'environnement Docker si nécessaire
+                    echo "Vérification de l'installation de python3-venv"
                     sh '''
-                        echo "Vérification de l'installation de python3-venv"
                         if ! dpkg -s python3-venv > /dev/null 2>&1; then
                             echo "python3-venv n'est pas installé. Installation en cours."
-                            sudo apt-get update && sudo apt-get install -y python3.10-venv
+                            sudo apt-get update && sudo apt-get install -y python3-venv
                         else
                             echo "python3-venv déjà installé."
                         fi
@@ -35,8 +34,6 @@ pipeline {
             steps {
                 script {
                     echo "Vérification des hooks de sécurité pre-commit"
-
-                    // Installer pre-commit dans un environnement virtuel
                     sh '''
                         echo "Installation de pre-commit dans un environnement virtuel..."
                         python3 -m venv ${PYTHON_VENV}
@@ -50,77 +47,66 @@ pipeline {
 
         stage('Compile') {
             steps {
-                // Ajouter ici ton code de compilation Maven ou un autre processus
                 echo 'Compilation du projet...'
             }
         }
 
         stage('JUnit/Mockito Tests') {
             steps {
-                // Ajouter ici tes tests unitaires
                 echo 'Exécution des tests unitaires...'
             }
         }
 
         stage('JaCoCo Report') {
             steps {
-                // Ajouter ici l'étape de génération du rapport JaCoCo
                 echo 'Génération du rapport JaCoCo...'
             }
         }
 
         stage('JaCoCo coverage report') {
             steps {
-                // Ajouter ici l'étape d'analyse de la couverture JaCoCo
                 echo 'Analyse de la couverture JaCoCo...'
             }
         }
 
         stage('Scan: SonarQube') {
             steps {
-                // Ajouter ici ton analyse SonarQube
                 echo 'Exécution de l’analyse SonarQube...'
             }
         }
 
         stage('Security Scan: Trufflehog') {
             steps {
-                // Ajouter ici le scan de sécurité avec Trufflehog
                 echo 'Exécution du scan Trufflehog...'
             }
         }
 
         stage('Security Scan: OWASP Dependency-Check') {
             steps {
-                // Ajouter ici le scan de dépendances OWASP
                 echo 'Exécution du scan OWASP Dependency-Check...'
             }
         }
 
         stage('Deploy to Nexus') {
             steps {
-                // Ajouter ici le déploiement dans Nexus
                 echo 'Déploiement vers Nexus...'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                // Ajouter ici la construction de l'image Docker
                 echo 'Construction de l’image Docker...'
             }
         }
 
         stage('Push Docker Image to DockerHub') {
             steps {
-                // Ajouter ici le push de l'image Docker sur DockerHub
                 echo 'Push de l’image Docker vers DockerHub...'
             }
         }
 
         stage('Run Docker Compose') {
             steps {
-                // Ajouter ici l'exécution de Docker Compose
                 echo 'Exécution de Docker Compose...'
             }
         }
@@ -136,17 +122,14 @@ pipeline {
 
     post {
         always {
-            // Actions à exécuter après chaque exécution du pipeline
             echo 'Pipeline terminé.'
         }
 
         success {
-            // Actions à exécuter si le pipeline est réussi
             echo 'Le build a réussi.'
         }
 
         failure {
-            // Actions à exécuter si le pipeline échoue
             echo 'Le build a échoué.'
         }
     }
