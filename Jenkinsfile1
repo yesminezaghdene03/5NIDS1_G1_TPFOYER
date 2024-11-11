@@ -1,57 +1,75 @@
 pipeline {
     agent any
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
-        SONAR_TOKEN = credentials('sonar-token')
+        DOCKERHUB_CREDENTIALS = 'dockerhub-credentials'
+        SONAR_TOKEN = credentials('sonar-token') // Token SonarQube pour analyse
     }
     stages {
-        stage('Clone Repository') {
+        stage('Checkout') {
             steps {
-                checkout([$class: 'GitSCM', branches: [[name: '*/AmineDridia_5NIDS1_G1']], 
-                    userRemoteConfigs: [[url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER']]
-                ])
+                git url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER', branch: 'AmineDridia_5NIDS1_G1'
             }
         }
-        
+
         stage('Pre-Commit') {
             steps {
                 script {
-                    sh '''
-                        python3 -m venv venv
-                        source venv/bin/activate
-                        pip install pre-commit
-                        git config --unset-all core.hooksPath
-                        pre-commit install
-                        pre-commit run --all-files
-                    '''
+                    // Création et activation de l'environnement virtuel pour pre-commit
+                    sh 'python3 -m venv venv'
+                    sh '. venv/bin/activate'
+                    sh 'pip install pre-commit'
+                    sh 'pre-commit install'
+                    sh 'pre-commit run --all-files'
                 }
             }
         }
-        
+
+        stage('Static Code Analysis: FindSecurityBugs') {
+            steps {
+                script {
+                    // Exécuter FindSecurityBugs avec Gradle
+                    def securityCheck = sh(script: './gradlew findbugsMain', returnStatus: true)
+                    if (securityCheck != 0) {
+                        error "FindSecurityBugs analysis failed!"
+                    }
+                }
+            }
+        }
+
         stage('Static Code Analysis: SonarQube') {
             steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh 'mvn clean verify sonar:sonar -Dsonar.login=${SONAR_TOKEN}'
+                script {
+                    // Lancer l'analyse SonarQube
+                    withSonarQubeEnv('SonarQube') {
+                        sh "mvn clean install sonar:sonar -Dsonar.login=${SONAR_TOKEN}"
+                    }
                 }
             }
         }
 
         stage('JUnit/Mockito Tests') {
             steps {
-                sh 'mvn test'
+                script {
+                    // Exécuter les tests unitaires JUnit
+                    sh 'mvn test'
+                }
             }
         }
 
         stage('Security Scan: OWASP Dependency-Check') {
             steps {
-                sh 'mvn dependency-check:check'
+                script {
+                    // Analyser les dépendances avec OWASP Dependency-Check
+                    sh './mvnw dependency-check:check'
+                }
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    docker.build("aminedridia/tp-foyer:${env.BUILD_ID}")
+                    // Construire l'image Docker
+                    sh 'docker build -t aminedridia/5nids1g1_tpfoyer:latest .'
                 }
             }
         }
@@ -59,9 +77,10 @@ pipeline {
         stage('Push Docker Image to DockerHub') {
             steps {
                 script {
-                    docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
-                        def customImage = docker.image("aminedridia/tp-foyer:${env.BUILD_ID}")
-                        customImage.push()
+                    // Push l'image Docker vers DockerHub
+                    withCredentials([usernamePassword(credentialsId: DOCKERHUB_CREDENTIALS, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD'
+                        sh 'docker push aminedridia/5nids1g1_tpfoyer:latest'
                     }
                 }
             }
@@ -69,28 +88,32 @@ pipeline {
 
         stage('Run Docker Compose') {
             steps {
-                sh 'docker-compose up -d'
+                script {
+                    // Exécuter Docker Compose pour déployer les conteneurs
+                    sh 'docker-compose up -d'
+                }
             }
         }
 
         stage('Deploy to Nexus') {
             steps {
-                sh 'mvn deploy'
+                script {
+                    // Déployer l'artifact sur Nexus
+                    sh 'mvn deploy'
+                }
             }
         }
     }
 
     post {
-        success {
-            echo 'Build succeeded'
-        }
-        failure {
+        always {
             echo 'Build finished'
-            emailext(
-                to: 'aminedridia9@gmail.com',
-                subject: "Build Failed in Jenkins Pipeline ${env.BUILD_ID}",
-                body: "Something went wrong. Please check the Jenkins job for details."
-            )
+            emailext subject: "Build Finished", to: 'aminedridia9@gmail.com', body: 'The build has completed successfully.'
+        }
+
+        failure {
+            echo 'Build failed'
+            emailext subject: "Build Failed", to: 'aminedridia9@gmail.com', body: 'The build has failed. Please check the logs for details.'
         }
     }
 }
