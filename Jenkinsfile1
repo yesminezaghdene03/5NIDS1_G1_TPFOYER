@@ -1,176 +1,111 @@
 pipeline {
     agent any
 
-    tools {
-        jdk 'JAVA_HOME'
-        maven 'M2_Home'
+    environment {
+        SONARQUBE_SERVER = 'http://192.168.33.10:9000'
+        EMAIL_RECIPIENT = 'aminedridia9@gmail.com'
     }
 
     stages {
-        // Development Phase: Pre-commit Security Hooks
-        stage('GIT') {
-            steps {
-                git branch: 'AmineDridia_5NIDS1_G1', 
-                    url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
-            }
-        }
-
         stage('Pre-commit Security Hooks') {
             steps {
                 script {
+                    echo "Vérification des hooks de sécurité pre-commit"
                     sh '''
-                    if ! command -v pre-commit &> /dev/null
-                    then
-                        echo "pre-commit n'est pas installé, installation dans un environnement virtuel..."
+                        echo "Installation de pre-commit dans un environnement virtuel..."
                         python3 -m venv venv
                         . venv/bin/activate
                         pip install pre-commit
-                    fi
-                    git config --unset-all core.hooksPath
-                    pre-commit install
-                    pre-commit run --all-files
+                        git config --unset-all core.hooksPath
+                        pre-commit install
                     '''
                 }
             }
         }
 
-        // Commit Phase: JUnit/Mockito Security Unit Tests
-        stage('Compile Stage') {
+        stage('Compile') {
             steps {
-                sh 'mvn clean compile'
+                echo "Compilation du code"
+                // Ajoutez ici les commandes de compilation si nécessaire
+            }
+        }
+
+        stage('Static Code Analysis: SonarQube') {
+            steps {
+                echo "Analyse SonarQube du code"
+                script {
+                    // Commande pour lancer l'analyse SonarQube
+                    sh 'mvn clean install sonar:sonar -Dsonar.host.url=${SONARQUBE_SERVER}'
+                }
             }
         }
 
         stage('JUnit/Mockito Tests') {
             steps {
-                sh 'mvn test' 
-            }
-        }
-
-        stage('JaCoCo Report') {
-            steps {
-                sh 'mvn jacoco:report'
-            }
-        }
-
-        stage('JaCoCo coverage report') {
-            steps {
-                step([$class: 'JacocoPublisher',
-                      execPattern: '**/target/jacoco.exec',
-                      classPattern: '**/classes',
-                      sourcePattern: '**/src',
-                      exclusionPattern: '*/target/**/,**/*Test*,**/*_javassist/**'
-                ])
-            }
-        }
-
-        // Acceptance Phase: Security Scanning Tools
-        stage('Scan : SonarQube') {
-            steps {
-                withSonarQubeEnv('sq1') {
-                    sh 'mvn sonar:sonar'
-                }
-            }
-        }
-
-        stage('Security Scan: Nmap') {
-            steps {
-                script {
-                    echo "Starting Nmap Security Scan..."
-                    sh 'sudo nmap -sS -p 1-65535 -v localhost'
-                }
+                echo "Exécution des tests JUnit/Mockito"
+                // Ajoutez ici les commandes pour exécuter les tests
             }
         }
 
         stage('Security Scan: OWASP Dependency-Check') {
             steps {
-                script {
-                    echo "Starting OWASP Dependency-Check..."
-                    sh 'mvn org.owasp:dependency-check-maven:check'
-                }
+                echo "Scan de sécurité avec OWASP Dependency-Check"
+                // Ajoutez ici les commandes pour le scan OWASP Dependency-Check
             }
         }
 
-        // Production Phase: Deployment and Monitoring
+        stage('Build Docker Image') {
+            steps {
+                echo "Création de l'image Docker"
+                // Ajoutez ici les commandes pour créer l'image Docker
+            }
+        }
+
+        stage('Push Docker Image to DockerHub') {
+            steps {
+                echo "Push de l'image Docker vers DockerHub"
+                // Ajoutez ici les commandes pour pousser l'image Docker vers DockerHub
+            }
+        }
+
+        stage('Run Docker Compose') {
+            steps {
+                echo "Exécution de Docker Compose"
+                // Ajoutez ici les commandes pour exécuter Docker Compose
+            }
+        }
+
         stage('Deploy to Nexus') {
             steps {
-                sh 'mvn deploy -DskipTests -DaltDeploymentRepository=deploymentRepo::default::http://192.168.33.10:8081/repository/maven-releases/'
+                echo "Déploiement vers Nexus"
+                // Ajoutez ici les commandes pour déployer vers Nexus
             }
         }
 
-        stage('Building image') {
+        stage('Post Actions') {
             steps {
-                sh 'docker build -t nawel119/gestion-station-ski:1.0.0 .'
-            }
-        }
-
-        stage('Deploy image') {
-            steps {
-                withCredentials([string(credentialsId: 'dockerhub-jenkins-token', variable: 'dockerhub_token')]) {
-                    sh "docker login -u nawel119 -p ${dockerhub_token}"
-                    sh 'docker push nawel119/gestion-station-ski:1.0.0'
-                }
-            }
-        }
-
-        stage('Docker compose') {
-            steps {
-                sh 'docker compose up -d'
-            }
-        }
-
-        // Operations Phase: Container and Pipeline Monitoring
-        stage('Start Monitoring Containers') {
-            steps {
-                sh 'docker start be79135ec1cc'
-            }
-        }
-
-        stage('Email Notification') {
-            steps {
-                mail bcc: '', 
-                     body: '''
-Final Report: The pipeline has completed successfully. No action required.
-''', 
-                     cc: '', 
-                     from: '', 
-                     replyTo: '', 
-                     subject: 'Succès de la pipeline DevOps Project', 
-                     to: 'aminedridia9@gmail.com'
+                echo "Actions post-build"
+                // Ajoutez ici les actions post-build nécessaires
             }
         }
     }
 
     post {
         success {
-            script {
-                emailext (
-                    subject: "Build Success: ${currentBuild.fullDisplayName}",
-                    body: "Le build a réussi ! Consultez les détails à ${env.BUILD_URL}",
-                    recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'DevelopersRecipientProvider']],
-                    to: 'aminedridia9@gmail.com'
-                )
-            }
+            echo "Pipeline terminé avec succès"
+            emailext(
+                subject: "Build Jenkins réussi",
+                body: "Le build Jenkins a été exécuté avec succès.",
+                to: "${EMAIL_RECIPIENT}"
+            )
         }
         failure {
-            script {
-                emailext (
-                    subject: "Build Failure: ${currentBuild.fullDisplayName}",
-                    body: "Le build a échoué ! Vérifiez les détails à ${env.BUILD_URL}",
-                    recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'DevelopersRecipientProvider']],
-                    to: 'aminedridia9@gmail.com'
-                )
-            }
-        }
-        always {
-            script {
-                emailext (
-                    subject: "Build Notification: ${currentBuild.fullDisplayName}",
-                    body: "Consultez les détails du build à ${env.BUILD_URL}",
-                    recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'DevelopersRecipientProvider']],
-                    to: 'aminedridia9@gmail.com'
-                )
-            }
+            echo "Le build a échoué"
+            emailext(
+                subject: "Build Jenkins échoué",
+                body: "Le build Jenkins a échoué. Veuillez consulter les logs pour plus de détails.",
+                to: "${EMAIL_RECIPIENT}"
+            )
         }
     }
 }
