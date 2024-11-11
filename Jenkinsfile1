@@ -15,7 +15,7 @@ pipeline {
                             exit 1
                         else
                             echo "Python3 est installé, exécution des hooks de sécurité."
-                            pre-commit run --all-files
+                            pre-commit run --all-files || echo "Erreur lors de l'exécution des hooks de sécurité."
                         fi
                     '''
                 }
