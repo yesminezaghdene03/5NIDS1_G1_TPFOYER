@@ -5,19 +5,19 @@ pipeline {
         stage('Pre-commit Security Hooks') {
             steps {
                 script {
-                    // Exécution de l'étape de pré-commit pour vérifier les hooks de sécurité
                     echo 'Exécution des pre-commit hooks pour vérification de sécurité'
+                    
+                    // Vérifie d'abord si Python3 est installé
+                    def pythonInstalled = sh(script: "command -v python3", returnStatus: true) == 0
 
-                    // Vérifie si Python3 est installé pour exécuter les hooks de pré-commit
-                    sh '''
-                        if ! command -v python3 &> /dev/null; then
-                            echo "Python3 n'est pas installé, veuillez l'installer avant de continuer."
-                            exit 1
-                        else
-                            echo "Python3 est installé, exécution des hooks de sécurité."
-                            pre-commit run --all-files || echo "Erreur lors de l'exécution des hooks de sécurité."
-                        fi
-                    '''
+                    if (pythonInstalled) {
+                        // Exécute les hooks de sécurité
+                        sh 'pre-commit run --all-files || echo "Erreur lors de l\'exécution des hooks de sécurité."'
+                    } else {
+                        // Affiche le message d'erreur et arrête le pipeline
+                        echo "Python3 n'est pas installé, veuillez l'installer avant de continuer."
+                        error("Python3 non installé.")
+                    }
                 }
             }
         }
