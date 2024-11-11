@@ -2,7 +2,7 @@ pipeline {
     agent any
     environment {
         DOCKERHUB_CREDENTIALS = 'dockerhub-credentials'
-        SONAR_TOKEN = credentials('jenkins-token') // Token SonarQube pour analyse
+        SONAR_TOKEN = credentials('jenkins-sonar') // Token SonarQube pour analyse
     }
     stages {
         stage('Checkout') {
