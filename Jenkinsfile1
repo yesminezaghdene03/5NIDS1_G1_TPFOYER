@@ -1,46 +1,37 @@
 pipeline {
     agent any
-
     environment {
-        DOCKER_HUB_CREDENTIALS = credentials('dockerhub-credentials')
-        NEXUS_CREDENTIALS = credentials('nexus-credentials')
-        SONARQUBE_CREDENTIALS = credentials('sonar-token')
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
+        SONAR_TOKEN = credentials('sonar-token')
     }
-
     stages {
-        stage('Checkout') {
+        stage('Clone Repository') {
             steps {
-                checkout scm
+                checkout([$class: 'GitSCM', branches: [[name: '*/AmineDridia_5NIDS1_G1']], 
+                    userRemoteConfigs: [[url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER']]
+                ])
             }
         }
-
+        
         stage('Pre-Commit') {
             steps {
                 script {
-                    // Désactive core.hooksPath pour permettre l'installation de pre-commit dans .git/hooks
-                    sh 'git config --unset-all core.hooksPath'
-
-                    // Installe pre-commit et exécute les hooks
                     sh '''
                         python3 -m venv venv
-                        . venv/bin/activate
+                        source venv/bin/activate
                         pip install pre-commit
+                        git config --unset-all core.hooksPath
                         pre-commit install
                         pre-commit run --all-files
                     '''
                 }
             }
         }
-
+        
         stage('Static Code Analysis: SonarQube') {
             steps {
-                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                    sh '''
-                        mvn sonar:sonar \
-                        -Dsonar.projectKey=tp-foyer \
-                        -Dsonar.host.url=http://sonarqube:9000 \
-                        -Dsonar.login=$SONAR_TOKEN
-                    '''
+                withSonarQubeEnv('SonarQube') {
+                    sh 'mvn clean verify sonar:sonar -Dsonar.login=${SONAR_TOKEN}'
                 }
             }
         }
@@ -53,16 +44,14 @@ pipeline {
 
         stage('Security Scan: OWASP Dependency-Check') {
             steps {
-                sh 'mvn org.owasp:dependency-check-maven:check'
+                sh 'mvn dependency-check:check'
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    docker.withRegistry('', DOCKER_HUB_CREDENTIALS) {
-                        sh 'docker build -t myapp:${BUILD_NUMBER} .'
-                    }
+                    docker.build("aminedridia/tp-foyer:${env.BUILD_ID}")
                 }
             }
         }
@@ -70,8 +59,9 @@ pipeline {
         stage('Push Docker Image to DockerHub') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', DOCKER_HUB_CREDENTIALS) {
-                        sh 'docker push myapp:${BUILD_NUMBER}'
+                    docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
+                        def customImage = docker.image("aminedridia/tp-foyer:${env.BUILD_ID}")
+                        customImage.push()
                     }
                 }
             }
@@ -85,30 +75,22 @@ pipeline {
 
         stage('Deploy to Nexus') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'NEXUS_USERNAME', passwordVariable: 'NEXUS_PASSWORD')]) {
-                    sh '''
-                        mvn deploy:deploy-file \
-                        -DgroupId=com.example \
-                        -DartifactId=myapp \
-                        -Dversion=1.0 \
-                        -Dpackaging=jar \
-                        -Dfile=target/myapp.jar \
-                        -DrepositoryId=nexus \
-                        -Durl=http://nexus:8081/repository/maven-releases \
-                        -Dusername=$NEXUS_USERNAME \
-                        -Dpassword=$NEXUS_PASSWORD
-                    '''
-                }
+                sh 'mvn deploy'
             }
         }
     }
 
     post {
-        always {
+        success {
+            echo 'Build succeeded'
+        }
+        failure {
             echo 'Build finished'
-            emailext to: 'aminedridia9@gmail.com',
-                     subject: "Build ${currentBuild.fullDisplayName}",
-                     body: "The build ${currentBuild.fullDisplayName} finished with status: ${currentBuild.currentResult}"
+            emailext(
+                to: 'aminedridia9@gmail.com',
+                subject: "Build Failed in Jenkins Pipeline ${env.BUILD_ID}",
+                body: "Something went wrong. Please check the Jenkins job for details."
+            )
         }
     }
 }
