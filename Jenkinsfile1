@@ -3,13 +3,10 @@ pipeline {
 
     environment {
         // Définir les variables d'environnement si nécessaire
-        PYTHON_VENV_DIR = "venv"
-        DOCKER_IMAGE_NAME = "my_docker_image"
-        DOCKER_HUB_REPO = "dockerhub_user/my_docker_repo"
     }
 
     stages {
-        stage('Checkout') {
+        stage('Declarative: Checkout SCM') {
             steps {
                 checkout scm
             }
@@ -20,12 +17,7 @@ pipeline {
                 script {
                     echo "Vérification de l'installation de python3-venv"
                     sh '''
-                        if ! dpkg -s python3-venv > /dev/null 2>&1; then
-                            echo "python3-venv n'est pas installé. Installation en cours."
-                            sudo apt-get update && sudo apt-get install -y python3-venv
-                        else
-                            echo "python3-venv déjà installé."
-                        fi
+                        dpkg -s python3-venv || sudo apt-get install -y python3-venv
                     '''
                 }
             }
@@ -37,8 +29,8 @@ pipeline {
                     echo "Vérification des hooks de sécurité pre-commit"
                     sh '''
                         echo "Installation de pre-commit dans un environnement virtuel..."
-                        python3 -m venv ${PYTHON_VENV_DIR}
-                        source ${PYTHON_VENV_DIR}/bin/activate
+                        python3 -m venv venv
+                        . venv/bin/activate  # Remplacer 'source' par '.'
                         pip install pre-commit
                         pre-commit install
                     '''
@@ -48,87 +40,82 @@ pipeline {
 
         stage('Compile') {
             steps {
-                echo 'Compilation du projet...'
+                echo "Compilation du projet"
+                // Ajoute ici la commande pour compiler ton projet, par exemple :
+                // sh './gradlew build' (si tu utilises Gradle)
             }
         }
 
         stage('JUnit/Mockito Tests') {
             steps {
-                echo 'Exécution des tests unitaires...'
-                // Remplace par la commande réelle pour les tests
+                echo "Exécution des tests unitaires"
+                // Ajoute ici la commande pour exécuter tes tests, par exemple :
+                // sh './gradlew test' (si tu utilises Gradle)
             }
         }
 
         stage('Scan: SonarQube') {
             steps {
-                echo 'Scan du projet avec SonarQube...'
-                // Ajoute les étapes pour l'intégration SonarQube ici
+                echo "Scan du code avec SonarQube"
+                // Ajoute ici la commande pour analyser le code avec SonarQube, par exemple :
+                // sh './gradlew sonarqube' (si tu utilises Gradle)
             }
         }
 
         stage('Security Scan: Trufflehog') {
             steps {
-                echo 'Scan de sécurité avec Trufflehog...'
-                // Ajoute les étapes de Trufflehog ici
+                echo "Scan de sécurité avec Trufflehog"
+                // Ajoute ici la commande pour exécuter Trufflehog, par exemple :
+                // sh 'trufflehog --scan ./path/to/repo'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    echo "Build de l'image Docker..."
-                    sh '''
-                        docker build -t ${DOCKER_IMAGE_NAME} .
-                    '''
-                }
+                echo "Construction de l'image Docker"
+                // Ajoute ici la commande pour construire l'image Docker, par exemple :
+                // sh 'docker build -t my-image .'
             }
         }
 
         stage('Push Docker Image to DockerHub') {
             steps {
-                script {
-                    echo "Push de l'image Docker sur DockerHub..."
-                    sh '''
-                        docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-                        docker push ${DOCKER_HUB_REPO}:${DOCKER_IMAGE_NAME}
-                    '''
-                }
+                echo "Push de l'image Docker vers DockerHub"
+                // Ajoute ici la commande pour pousser l'image Docker vers DockerHub, par exemple :
+                // sh 'docker push my-image'
             }
         }
 
         stage('Run Docker Compose') {
             steps {
-                echo 'Exécution de Docker Compose...'
-                sh '''
-                    docker-compose up -d
-                '''
+                echo "Exécution de Docker Compose"
+                // Ajoute ici la commande pour exécuter Docker Compose, par exemple :
+                // sh 'docker-compose up -d'
             }
         }
 
         stage('Deploy to Nexus') {
             steps {
-                echo 'Déploiement sur Nexus...'
-                // Ajoute les étapes de déploiement Nexus ici
+                echo "Déploiement vers Nexus"
+                // Ajoute ici la commande pour déployer vers Nexus, par exemple :
+                // sh './gradlew deploy' (si tu utilises Gradle)
             }
         }
 
         stage('Post Actions') {
             steps {
-                echo 'Exécution des actions post-build...'
-                // Ajoute les actions après le build ici
+                echo "Actions post-build"
+                // Ajoute ici les actions à réaliser après le build, comme des notifications
             }
         }
     }
 
     post {
-        always {
-            echo 'Pipeline terminé.'
-        }
         success {
-            echo 'Le build a réussi.'
+            echo "Pipeline terminé avec succès"
         }
         failure {
-            echo 'Le build a échoué.'
+            echo "Le build a échoué"
         }
     }
 }
