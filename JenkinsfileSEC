@@ -7,30 +7,42 @@ pipeline {
                 git branch: 'hadhemiOmrani_5NIDS_G1', url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
             }
         }
-        stage ('Maven Build') {
-            steps {
-                sh 'mvn clean install'
-            }
-        }
-
         stage ('UNIT Testing') {
             steps {
                 sh 'mvn test'
             }
         }
-
         stage ('Integration Testing') {
             steps {
                 sh 'mvn verify'
             }
         }
-        
+        stage ('Maven Build') {
+            steps {
+                sh 'mvn clean install'
+            }
+        }
         stage('Code Coverage') {
             steps {
                 jacoco()
             }
         }
-
+        /*stage ('SonarQube Analysis') {
+            steps {
+                script {
+                    withSonarQubeEnv(credentialsId: 'sonar-api-key') {
+                        sh 'mvn clean package sonar:sonar'
+                    }
+                }
+            }
+        }
+        stage ('Quality Gate Status') {
+            steps {
+                script {
+                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-api-key'
+                }
+            }
+        }*/
         stage ('OWASP Dependency-Check') {
             steps {
                 script {
@@ -38,7 +50,6 @@ pipeline {
                 }
             }
         }
-
         stage('Archive Dependency-Check Report') {
             steps {
                 script {
@@ -46,7 +57,6 @@ pipeline {
                 }
             }
         }
-
         stage('Publish Dependency-Check Results') {
             steps {
                 script {
@@ -54,28 +64,26 @@ pipeline {
                 }
             }
         }
-
         stage ('Nexus') {
             steps {
                 script {
                     def readPomVersion = readMavenPom file: 'pom.xml'
                     def version = readPomVersion.version
                     def repository = version.endsWith("SNAPSHOT") ? "tpfoyer-snapshot" : "Tpfoyer-Release"
-
                     nexusArtifactUploader artifacts: [
                         [
-                            artifactId: 'tp-foyer', 
-                            classifier: '', 
-                            file: 'target/Uterk.jar', 
+                            artifactId: 'tp-foyer',
+                            classifier: '',
+                            file: 'target/Uterk.jar',
                             type: 'jar'
                         ]
-                    ], 
-                    credentialsId: 'nexus-auth', 
-                    groupId: 'tn.esprit', 
-                    nexusUrl: '192.168.1.170:8081', 
-                    nexusVersion: 'nexus3', 
-                    protocol: 'http', 
-                    repository: repository, 
+                    ],
+                    credentialsId: 'nexus-auth',
+                    groupId: 'tn.esprit',
+                    nexusUrl: '192.168.1.170:8081',
+                    nexusVersion: 'nexus3',
+                    protocol: 'http',
+                    repository: repository,
                     version: "${readPomVersion.version}"
                 }
             }
@@ -83,23 +91,12 @@ pipeline {
         stage('Docker Image Build') {
             steps {
                 script {
-                    sh 'docker image build -t tp_foyer_devsecops:v1.$BUILD_ID .' 
-                    sh 'docker image tag tp_foyer_devsecops:v1.$BUILD_ID omranihadhemi/tp_foyer_devsecops:v1.$BUILD_ID'
-                    sh 'docker image tag tp_foyer_devsecops:v1.$BUILD_ID omranihadhemi/tp_foyer_devsecops:latest'
+                    sh 'docker image build -t $JOB_NAME:v1.$BUILD_ID .'
+                    sh 'docker image tag $JOB_NAME:v1.$BUILD_ID omranihadhemi/$JOB_NAME:v1.$BUILD_ID'
+                    sh 'docker image tag $JOB_NAME:v1.$BUILD_ID omranihadhemi/$JOB_NAME:latest'
                 }
             }
         }
-        stage('Trivy Scan') {
-            steps {
-                script {
-                    
-                    sh '''
-                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /var/lib/jenkins/workspace/tp_foyer_DEVSECOPS:/mnt aquasec/trivy --quiet --severity HIGH,CRITICAL omranihadhemi/tp_foyer_DEVSECOPS:v1.18
-                    '''
-                }
-            }
-        }
-
         stage ('Docker Hub') {
             steps {
                 script {
@@ -111,7 +108,6 @@ pipeline {
                 }
             }
         }
-
         stage('Docker Compose Down') {
             steps {
                 script {
@@ -119,7 +115,6 @@ pipeline {
                 }
             }
         }
-
         stage('Docker Compose Up') {
             steps {
                 script {
@@ -127,7 +122,6 @@ pipeline {
                 }
             }
         }
-
         stage('Prometheus') {
             steps {
                 script {
@@ -135,7 +129,6 @@ pipeline {
                 }
             }
         }
-
         stage('Grafana') {
             steps {
                 script {
@@ -143,7 +136,6 @@ pipeline {
                 }
             }
         }
-
         stage('Cleanup Old Docker Images') {
             steps {
                 script {
@@ -152,7 +144,6 @@ pipeline {
             }
         }
     }
-
     post {
         always {
             mail to: 'hadhemi5050@gmail.com',
