@@ -33,18 +33,16 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    sh """
-                    mvn sonar:sonar \
-                        -Dsonar.host.url=${SONAR_HOST_URL} \
-                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                        -Dsonar.projectName=${SONAR_PROJECT_NAME} \
-                        -Dsonar.projectVersion=${SONAR_PROJECT_VERSION} \
-                        -Dsonar.java.binaries=target/classes \
-                        -Dsonar.sources=src/main/java \
-                        -Dsonar.tests=src/test/java \
-                        -Dsonar.login=${SONAR_LOGIN} \
-                        -Dsonar.verbose=true
-                    """
+                    sh 'mvn clean verify sonar:sonar ' +
+                       '-Dsonar.host.url=${SONAR_HOST_URL} ' +
+                       '-Dsonar.projectKey=${SONAR_PROJECT_KEY} ' +
+                       '-Dsonar.projectName=${SONAR_PROJECT_NAME} ' +
+                       '-Dsonar.projectVersion=${SONAR_PROJECT_VERSION} ' +
+                       '-Dsonar.java.binaries=target/classes ' +
+                       '-Dsonar.sources=src/main/java ' +
+                       '-Dsonar.tests=src/test/java ' +
+                       '-Dsonar.login=${SONAR_LOGIN} ' +
+                       '-Dsonar.verbose=true'
                 }
             }
         }
