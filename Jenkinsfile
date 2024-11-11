@@ -60,28 +60,5 @@ pipeline {
                 }
             }
         }
-
-        // Ajout des stages pour Grafana et Prometheus
-        stage('Start Prometheus') {
-            steps {
-                script {
-                    sh '''
-                        # Assurez-vous que le fichier prometheus.yml est bien présent dans votre répertoire
-                        sudo docker-compose up -d prometheus
-                    '''
-                }
-            }
-        }
-
-        stage('Start Grafana') {
-            steps {
-                script {
-                    sh '''
-                        # Démarrage de Grafana
-                        sudo docker-compose up -d grafana
-                    '''
-                }
-            }
-        }
     }
-}
+} 
