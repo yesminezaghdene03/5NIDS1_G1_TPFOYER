@@ -6,8 +6,13 @@ pipeline {
         maven 'M2_HOME'
     }
 
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-jenkins-token')
+        SONARQUBE_ENV = 'sq1'
+    }
+
     stages {
-        // Development Phase: Pre-commit Security Hooks
+        // PHASE 1: Development Phase
         stage('GIT') {
             steps {
                 git branch: 'AmineDridia_5NIDS1_G1',
@@ -15,13 +20,13 @@ pipeline {
             }
         }
 
-        stage('Pre-commit Security Hooks') {
+        stage('Pre-Commit Security Hooks') {
             steps {
                 script {
                     sh '''
                     if ! command -v pre-commit &> /dev/null
                     then
-                        echo "Installing pre-commit in a virtual environment..."
+                        echo "Installing pre-commit..."
                         python3 -m venv venv
                         . venv/bin/activate
                         pip install pre-commit
@@ -34,38 +39,7 @@ pipeline {
             }
         }
 
-        // Commit Phase: JUnit/Mockito Security Unit Tests
-        stage('Compile Stage') {
-            steps {
-                sh 'mvn clean compile'
-            }
-        }
-
-        stage('JUnit/Mockito Tests') {
-            steps {
-                sh 'mvn test'
-            }
-        }
-
-        stage('JaCoCo Report') {
-            steps {
-                sh 'mvn jacoco:report'
-            }
-        }
-
-        stage('JaCoCo coverage report') {
-            steps {
-                step([$class: 'JacocoPublisher',
-                      execPattern: '**/target/jacoco.exec',
-                      classPattern: '**/classes',
-                      sourcePattern: '**/src',
-                      exclusionPattern: '*/target/**/,**/*Test*,**/*_javassist/**'
-                ])
-            }
-        }
-
-        // Acceptance Phase: Security Scanning Tools
-        stage('Scan : SonarQube') {
+        stage('Static Code Analysis (SonarQube)') {
             steps {
                 withSonarQubeEnv('sq1') {
                     sh 'mvn sonar:sonar'
@@ -73,32 +47,54 @@ pipeline {
             }
         }
 
-        stage('Security Scan: Nmap') {
+        stage('Unit Testing with JUnit/Mockito') {
+            steps {
+                sh 'mvn test'
+            }
+        }
+
+        // PHASE 2: Commit Stage
+        stage('JaCoCo Report') {
+            steps {
+                sh 'mvn jacoco:report'
+            }
+        }
+
+        stage('JaCoCo Coverage Report') {
+            steps {
+                step([$class: 'JacocoPublisher',
+                      execPattern: '**/target/jacoco.exec',
+                      classPattern: '**/classes',
+                      sourcePattern: '**/src',
+                      exclusionPattern: '**/target/**/,**/*Test*,**/*_javassist/**'
+                ])
+            }
+        }
+
+        stage('Security Scan with TruffleHog') {
             steps {
                 script {
-                    echo "Starting Nmap Security Scan..."
-                    sh 'sudo nmap -sS -p 1-65535 -v localhost'
+                    echo "Scanning for sensitive information with TruffleHog..."
+                    sh '''
+                    if ! command -v trufflehog &> /dev/null
+                    then
+                        echo "Installing TruffleHog..."
+                        pip install trufflehog
+                    fi
+                    trufflehog filesystem . --json > trufflehog_report.json
+                    '''
                 }
             }
         }
 
-        stage('Security Scan: OWASP Dependency-Check') {
-            steps {
-                script {
-                    echo "Starting OWASP Dependency-Check..."
-                    sh 'mvn org.owasp:dependency-check-maven:check'
-                }
-            }
-        }
-
-        // Production Phase: Deployment and Monitoring
+        // PHASE 3: Production Phase
         stage('Deploy to Nexus') {
             steps {
                 sh 'mvn deploy -DskipTests -DaltDeploymentRepository=deploymentRepo::default::http://192.168.33.10:8081/repository/maven-releases/'
             }
         }
 
-        stage('Building Docker Image') {
+        stage('Build Docker Image') {
             steps {
                 sh 'docker build -t aminedridia/tp-foyer:5.0.0 .'
             }
@@ -106,26 +102,28 @@ pipeline {
 
         stage('Push Docker Image to DockerHub') {
             steps {
-                withCredentials([string(credentialsId: 'dockerhub-jenkins-token', variable: 'dockerhub_token')]) {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-jenkins-token', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
-                        docker login -u aminedridia -p aminedridia
+                        echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
                         docker push aminedridia/tp-foyer:5.0.0
                     '''
                 }
             }
         }
 
-        stage('Docker Compose') {
+        stage('Run Docker Compose') {
             steps {
                 sh 'docker-compose up -d'
             }
         }
 
-        // Operations Phase: Container and Pipeline Monitoring
+        // PHASE 4: Operations Phase
         stage('Start Monitoring Containers') {
             steps {
-                echo "Starting monitoring container..."
-                sh 'docker start be79135ec1cc'
+                script {
+                    echo "Starting monitoring container..."
+                    sh 'docker start be79135ec1cc' // Replace with the actual container ID or name.
+                }
             }
         }
 
@@ -133,7 +131,7 @@ pipeline {
             steps {
                 mail bcc: '', 
                      body: '''
-Final Report: The pipeline has completed successfully. No action is required.
+Pipeline Report: The pipeline has completed successfully. No further action is required.
 ''', 
                      cc: '', 
                      from: '', 
@@ -160,16 +158,6 @@ Final Report: The pipeline has completed successfully. No action is required.
                 emailext (
                     subject: "Build Failure: ${currentBuild.fullDisplayName}",
                     body: "Le build a échoué ! Vérifiez les détails à ${env.BUILD_URL}",
-                    recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'DevelopersRecipientProvider']],
-                    to: 'aminedridia9@gmail.com'
-                )
-            }
-        }
-        always {
-            script {
-                emailext (
-                    subject: "Build Notification: ${currentBuild.fullDisplayName}",
-                    body: "Consultez les détails du build à ${env.BUILD_URL}",
                     recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'DevelopersRecipientProvider']],
                     to: 'aminedridia9@gmail.com'
                 )
