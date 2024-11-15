@@ -122,7 +122,7 @@ pipeline {
             steps {
                 script {
                     echo "Starting monitoring container..."
-                    sh 'docker start be79135ec1cc' // Replace with the actual container ID or name.
+                    sh 'docker start be79135ec1cc' 
                 }
             }
         }
