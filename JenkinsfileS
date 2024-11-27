@@ -24,6 +24,23 @@ pipeline{
                 sh 'mvn clean install'
             }
         }
+        stage ('Code Coverage') { 
+            steps { 
+                sh 'mvn jacoco:report' 
+            }
+        }
+        stage ('SonarQube Analysis') {
+            steps {
+                script {
+                    withSonarQubeEnv(credentialsId: 'sonar-api-key') {
+                        sh 'mvn clean package sonar:sonar'
+
+   
+                }
+                    
+                }
+            }
+        }
+   }
          
-     }
 }
