@@ -1,0 +1,13 @@
+pipeline{
+
+    agent any 
+     stages {
+
+        stage ('Git Checkout'){
+            steps {
+                git branch: 'hadhemiOmrani_5NIDS_G1', url: 'https://github.com/yesminezaghdene03/5NIDS1_G1_TPFOYER.git'
+            }
+        }
+         
+     }
+}
