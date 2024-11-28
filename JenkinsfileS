@@ -95,6 +95,32 @@ pipeline{
                 }
             }
         }
+        stage('Docker Image  Build'){
+            steps {
+                script {
+                    sh 'docker image build -t $JOB_NAME:v1.$BUILD_ID .'
+                    sh 'docker image tag $JOB_NAME:v1.$BUILD_ID omranihadhemi/$JOB_NAME:v1.$BUILD_ID'
+                    sh 'docker image tag $JOB_NAME:v1.$BUILD_ID omranihadhemi/$JOB_NAME:latest'
+
+                }
+            }
+        }
+        stage ('Docker Hub'){
+            steps{
+                script{
+                    withCredentials([string(credentialsId: 'docker-hub', variable: 'dockerhub_credts')]) {
+                        sh 'docker login -u omranihadhemi -p ${dockerhub_credts}'
+                        sh 'docker image push omranihadhemi/$JOB_NAME:v1.$BUILD_ID '
+                        sh 'docker image push omranihadhemi/$JOB_NAME:latest '
+    
+                    }
+                    
+
+                }
+            }
+
+        }
+
    }
          
 }
