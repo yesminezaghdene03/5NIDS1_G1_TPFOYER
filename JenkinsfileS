@@ -48,6 +48,53 @@ pipeline{
                 }
             }
         }
+        stage ('OWASP Dependency-Check') {
+            steps {
+                script {
+                    dependencyCheck additionalArguments: '--scan .', odcInstallation: 'DP-check'
+                }
+            }
+        }
+        stage('Archive Dependency-Check Report') {
+            steps {
+                script {
+                    archiveArtifacts artifacts: 'dependency-check-report.xml', allowEmptyArchive: true
+                }
+            }
+        }
+        stage('Publish Dependency-Check Results') {
+            steps {
+                script {
+                    dependencyCheckPublisher pattern: 'dependency-check-report.xml'
+                }
+            }
+        }
+        stage ('Nexus') {
+            steps {
+                script {
+
+                    def readPomVersion = readMavenPom file: 'pom.xml'
+                    def version = readPomVersion.version
+                    def repository = version.endsWith("SNAPSHOT") ? "tpfoyer-snapshot" : "Tpfoyer-Release"
+
+                    nexusArtifactUploader artifacts: [
+                        [
+                            artifactId: 'tp-foyer', 
+                            classifier: '', 
+                            file: 'target/Uterk.jar', 
+                            type: 'jar'
+                        ]
+                    ], 
+                    credentialsId: 'nexus-authh', 
+                    groupId: 'tn.esprit', 
+                    nexusUrl: '192.168.50.4:8081', 
+                    nexusVersion: 'nexus3', 
+                    protocol: 'http', 
+                    repository: repository, 
+                    version: "${readPomVersion.version}"
+                }
+            }
+        }
    }
          
 }
