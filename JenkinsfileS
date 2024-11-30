@@ -120,6 +120,28 @@ pipeline{
             }
 
         }
+        stage('Docker Compose Up') {
+            steps{
+                script{
+                    sh 'docker compose up -d'
+                }
+            }
+        }
+        stage('Prometheus'){
+            steps{
+                script{
+                    sh 'docker restart prometheus'
+                }
+            }
+        }
+        stage('Grafana'){
+            steps{
+                script{
+                    sh 'docker restart grafana'
+                }
+            }
+        }
+
 
    }
          
